@@ -1,9 +1,10 @@
 # Antiflood module for Kohana Framework
 
 This module can be used to protect Your application against too many requests.
+It can not protect against DDoS attacks.
 
-Based on https://github.com/damog/planetalinux/blob/master/www/principal/suscripcion/lib/antiflood.hack.php
-antiflood script.
+This is derivative work from:
+https://github.com/damog/planetalinux/blob/master/www/principal/suscripcion/lib/antiflood.hack.php
 
 
 ## Information
