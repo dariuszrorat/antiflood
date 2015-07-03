@@ -3,7 +3,8 @@
 This module can be used to protect Your application against too many requests.
 It can not protect against DDoS attacks.
 
-This is derivative work from:
+This is derivative work based on:
+
 https://github.com/damog/planetalinux/blob/master/www/principal/suscripcion/lib/antiflood.hack.php
 
 
