@@ -33,7 +33,7 @@ You must set DOCROOT in Your index.php
 
 Add:
 
-` 'antiflood' => MODPATH . 'antifloood' `
+` 'antiflood' => MODPATH . 'antiflood' `
 
 to Your bootstrap.php
 
