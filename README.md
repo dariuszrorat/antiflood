@@ -99,7 +99,7 @@ return array(
               'control_max_requests'    => 3,
               'control_request_timeout' => 3600,
               'control_ban_time'        => 600
-	),
+        ),
         'mysql'   => array(
 	      'driver'             => 'mysql',
 	      'hostname'           => 'localhost',
@@ -111,7 +111,7 @@ return array(
               'control_max_requests'    => 3,
               'control_request_timeout' => 3600,
               'control_ban_time'        => 600
-	),
+        ),
         'postgresql'   => array(
 	      'driver'             => 'postgresql',
 	      'hostname'           => 'localhost',
@@ -123,7 +123,7 @@ return array(
               'control_max_requests'    => 3,
               'control_request_timeout' => 3600,
               'control_ban_time'        => 600
-	),
+        ),
 
 );
 ```
