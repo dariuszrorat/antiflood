@@ -1,141 +1,143 @@
 <?php defined('SYSPATH') or die('No direct script access.');
 
-class Kohana_Antiflood {
+abstract class Kohana_Antiflood {
 
-	// Merged configuration settings
-	protected $config = array(
-                'control_dir'             => 'application/control/antiflood',
-                'control_max_requests'    => 5,
-                'control_request_timeout' => 3600,
-                'control_ban_time'        => 600
-	);
 
-	protected $control_dir;
-	protected $control_max_requests;
-        protected $control_request_timeout;
-        protected $control_ban_time;
+	protected $_control_max_requests;
+        protected $_control_request_timeout;
+        protected $_control_ban_time;
 
-        protected $control_lock_file;
-        protected $control_db;
-        protected $user_ip;
+        protected $_user_ip;
 
-	public function __construct(array $config = array())
+	/**
+	 * @var   string     default driver to use
+	 */
+	public static $default = 'file';
+
+	/**
+	 * @var   Kohana_Antiflood instances
+	 */
+	public static $instances = array();
+
+	/**
+	 * Creates a singleton of a Kohana Antiflood group. If no group is supplied
+	 * the __default__ antiflood group is used.
+	 *
+	 *     // Create an instance of the default group
+	 *     $default_group = Antiflood::instance();
+	 *
+	 *     // Create an instance of a group
+	 *     $foo_group = Antiflood::instance('foo');
+	 *
+	 *     // Access an instantiated group directly
+	 *     $foo_group = Antiflood::$instances['default'];
+	 *
+	 * @param   string  $group  the name of the cache group to use [Optional]
+	 * @return  Antiflood
+	 * @throws  Antiflood_Exception
+	 */
+	public static function instance($group = NULL)
 	{
-                if (!defined("DOCROOT")) die("NO DOCROOT DEFINED");
-
-                $this->user_ip = $_SERVER["REMOTE_ADDR"];
-		$this->config = $this->config_group() + $this->config;
-
-		$this->setup($config);
-
-	}
-
-	public function config_group($group = 'default')
-	{
-		$config_file = Kohana::$config->load('antiflood');
-		$config['group'] = (string) $group;
-		while (isset($config['group']) AND isset($config_file->$config['group']))
+		// If there is no group supplied
+		if ($group === NULL)
 		{
-			$group = $config['group'];
-			unset($config['group']);
-			$config += $config_file->$group;
+			// Use the default setting
+			$group = Antiflood::$default;
 		}
 
-		unset($config['group']);
-
-		return $config;
-	}
-
-	public function setup(array $config = array())
-	{
-		if (isset($config['group']))
+		if (isset(Antiflood::$instances[$group]))
 		{
-			$config += $this->config_group($config['group']);
+			// Return the current group if initiated already
+			return Antiflood::$instances[$group];
 		}
 
-		$this->config = $config + $this->config;
+		$config = Kohana::$config->load('antiflood');
 
-                $this->control_dir =
-                   (isset($config['control_dir']) ? $config['control_dir'] : $this->config['control_dir']);
-                $this->control_max_requests =
-                   (isset($config['control_max_requests']) ? $config['control_max_requests'] : $this->config['control_max_requests']);
-                $this->control_request_timeout =
-                   (isset($config['control_request_timeout']) ? $config['control_request_timeout'] : $this->config['control_request_timeout']);
-                $this->control_ban_time =
-                   (isset($config['control_ban_time']) ? $config['control_ban_time'] : $this->config['control_ban_time']);
-                $this->control_db = DOCROOT . $this->control_dir . "/control.db";
-                $this->control_lock_file = DOCROOT . $this->control_dir . "/" . md5($this->user_ip) . ".lock";
+		if ( ! $config->offsetExists($group))
+		{
+			throw new Antiflood_Exception(
+				'Failed to load Kohana Antiflood group: :group',
+				array(':group' => $group)
+			);
+		}
 
+		$config = $config->get($group);
+
+		// Create a new antiflood type instance
+		$antiflood_class = 'Antiflood_'.ucfirst($config['driver']);
+		Antiflood::$instances[$group] = new $antiflood_class($config);
+
+		// Return the instance
+		return Antiflood::$instances[$group];
 	}
 
+	/**
+	 * @var  Config
+	 */
+	protected $_config = array();
 
-        public function check()
-        {
-            if (file_exists($this->control_lock_file))
-            {
-                $diff = time() - filemtime($this->control_lock_file);
-		if ($diff > $this->control_ban_time)
-                {
-		    unlink($this->control_lock_file);
-                    return true;
-		}
-                else
-                {
-	            touch($this->control_lock_file);
-		    return false;
-		}
-
-            }
-            else
-            {
-                return true;
-            }
-        }
-
-        public function countRequests()
-        {
-		$control = Array();
-
-		if (file_exists($this->control_db)) {
-			$fh = fopen($this->control_db, "r");
-			$control = array_merge($control, unserialize(fread($fh, filesize($this->control_db))));
-			fclose($fh);
-		}
-
-		if (isset($control[$this->user_ip])) {
-			if (time()-$control[$this->user_ip]["t"] < $this->control_request_timeout)
-                        {
-				$control[$this->user_ip]["c"]++;
-			} else {
-				$control[$this->user_ip]["c"] = 1;
-			}
-		} else {
-			$control[$this->user_ip]["c"] = 1;
-		}
-		$control[$this->user_ip]["t"] = time();
-
-		if ($control[$this->user_ip]["c"] >= $this->control_max_requests)
-                {
-			$fh = fopen($this->control_lock_file, "w");
-			fwrite($fh, $this->user_ip);
-			fclose($fh);
-                        $control[$this->user_ip]["c"] = 0;
-		}
-
-		$fh = fopen($this->control_db, "w");
-		fwrite($fh, serialize($control));
-		fclose($fh);
-
-        }
-
-	public function __get($key)
+	/**
+	 * Ensures singleton pattern is observed, loads the default expiry
+	 *
+	 * @param  array  $config  configuration
+	 */
+	protected function __construct(array $config)
 	{
-	    return isset($this->$key) ? $this->$key : NULL;
+		$this->config($config);
 	}
 
-	public function __set($key, $value)
+	/**
+	 * Getter and setter for the configuration. If no argument provided, the
+	 * current configuration is returned. Otherwise the configuration is set
+	 * to this class.
+	 *
+	 *     // Overwrite all configuration
+	 *     $antiflood->config(array('driver' => 'file', '...'));
+	 *
+	 *     // Set a new configuration setting
+	 *     $antiflood->config('connection', array(
+	 *          'foo' => 'bar',
+	 *          '...'
+	 *          ));
+	 *
+	 *     // Get a configuration setting
+	 *     $connection = $antiflood->config('connection');
+	 *
+	 * @param   mixed    key to set to array, either array or config path
+	 * @param   mixed    value to associate with key
+	 * @return  mixed
+	 */
+	public function config($key = NULL, $value = NULL)
 	{
-            $this->setup(array($key => $value));
+		if ($key === NULL)
+			return $this->_config;
+
+		if (is_array($key))
+		{
+			$this->_config = $key;
+		}
+		else
+		{
+			if ($value === NULL)
+				return Arr::get($this->_config, $key);
+
+			$this->_config[$key] = $value;
+		}
+
+		return $this;
 	}
+
+	/**
+	 * Overload the __clone() method to prevent cloning
+	 *
+	 * @return  void
+	 * @throws  Antiflood_Exception
+	 */
+	final public function __clone()
+	{
+		throw new Antiflood_Exception('Cloning of Kohana_Antiflood objects is forbidden');
+	}
+
+
 
 }
