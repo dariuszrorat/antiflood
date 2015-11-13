@@ -12,7 +12,7 @@ return array(
 	'sqlite'   => array(
 		'driver'             => 'sqlite',
 		'database'           => APPPATH.'control/antiflood/kohana-antiflood.sql3',
-		'schema'             => 'CREATE TABLE controls(id VARCHAR(127) PRIMARY KEY, iphash VARCHAR(50), requests INTEGER, locked INTEGER)',
+		'schema'             => 'CREATE TABLE controls(id integer PRIMARY KEY AUTOINCREMENT, iphash VARCHAR(50), requests INTEGER, locked INTEGER)',
                 'control_max_requests'    => 3,
                 'control_request_timeout' => 3600,
                 'control_ban_time'        => 600
@@ -24,7 +24,7 @@ return array(
 		'username'   => 'root',
 		'password'   => '',
 		'persistent' => FALSE,
-		'schema'             => 'CREATE TABLE controls(id VARCHAR(127) PRIMARY KEY, iphash VARCHAR(50), requests INTEGER, locked INTEGER)',
+		'schema'             => 'CREATE TABLE controls(id int(11) UNSIGNED NOT NULL AUTO_INCREMENT, iphash VARCHAR(50), requests INTEGER, locked INTEGER)',
                 'control_max_requests'    => 3,
                 'control_request_timeout' => 3600,
                 'control_ban_time'        => 600
@@ -36,7 +36,7 @@ return array(
 		'username'   => 'postgres',
 		'password'   => '',
 		'persistent' => FALSE,
-		'schema'             => 'CREATE TABLE controls(id VARCHAR(127) PRIMARY KEY, iphash VARCHAR(50), requests INTEGER, locked INTEGER)',
+		'schema'             => 'CREATE TABLE controls(id serial, iphash VARCHAR(50), requests INTEGER, locked INTEGER)',
                 'control_max_requests'    => 3,
                 'control_request_timeout' => 3600,
                 'control_ban_time'        => 600
