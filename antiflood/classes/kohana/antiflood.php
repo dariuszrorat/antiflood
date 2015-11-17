@@ -2,10 +2,17 @@
 
 abstract class Kohana_Antiflood {
 
+        const DEFAULT_EXPIRE = 3600;
 
 	protected $_control_max_requests;
         protected $_control_request_timeout;
         protected $_control_ban_time;
+	/**
+	 * @var   integer expiration used by garbage collector
+         * this value should be greather than control ban time
+         * if less, control ban time is used
+	 */
+        protected $_expiration;
 
         protected $_user_ip;
         protected $_uri;

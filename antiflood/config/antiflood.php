@@ -8,7 +8,8 @@ return array(
         'control_dir' => APPPATH . 'control/antiflood',
         'control_max_requests' => 3,
         'control_request_timeout' => 3600,
-        'control_ban_time' => 20
+        'control_ban_time' => 600,
+        'expiration'       => 1200
     ),
     'sqlite' => array(
         'driver' => 'sqlite',
@@ -16,7 +17,8 @@ return array(
         'schema' => 'CREATE TABLE controls(id integer PRIMARY KEY AUTOINCREMENT, user_ip VARCHAR(20), uri varchar(255), last_access datetime, requests INTEGER, locked INTEGER, locked_access datetime)',
         'control_max_requests' => 3,
         'control_request_timeout' => 3600,
-        'control_ban_time' => 20
+        'control_ban_time' => 600,
+        'expiration'       => 1200
     ),
     'mysql' => array(
         'driver' => 'mysql',
@@ -37,7 +39,8 @@ return array(
         ') ENGINE=InnoDB DEFAULT CHARSET=utf8;',
         'control_max_requests' => 3,
         'control_request_timeout' => 3600,
-        'control_ban_time' => 20
+        'control_ban_time' => 20,
+        'expiration'       => 40
     ),
     'postgresql' => array(
         'driver' => 'postgresql',
@@ -59,6 +62,7 @@ return array(
         ')',
         'control_max_requests' => 3,
         'control_request_timeout' => 3600,
-        'control_ban_time' => 600
+        'control_ban_time' => 600,
+        'expiration'       => 1200
     ),
 );

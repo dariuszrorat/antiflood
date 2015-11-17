@@ -45,6 +45,7 @@ Using default file driver:
 ```php
 
  $antiflood = Antiflood::instance();
+ $antiflood->garbage_collect();
  if ($antiflood->check())
  {
      $antiflood->count_requests();
@@ -63,6 +64,7 @@ Using sqlite driver:
 ```php
 
  $antiflood = Antiflood::instance('sqlite');
+ $antiflood->garbage_collect(); //this is optional
  if ($antiflood->check())
  {
      $antiflood->count_requests();
@@ -76,6 +78,12 @@ Using sqlite driver:
 
 ```
 
+The garbage collection uses expiration config value to delete old and not used
+records.
+
+WARNING: The garbage_collect method must be called before count_requests method!
+You can not use probablistic garbage collection method called by random number
+generation.
 
 ## Config
 

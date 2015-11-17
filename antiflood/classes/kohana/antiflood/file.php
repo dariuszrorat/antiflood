@@ -45,7 +45,7 @@ defined('SYSPATH') or die('No direct script access.');
  * @author     Dariusz Rorat
  * @copyright  (c) 2015 Dariusz Rorat
  */
-class Kohana_Antiflood_File extends Antiflood
+class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollect
 {
 
     /**
@@ -74,8 +74,13 @@ class Kohana_Antiflood_File extends Antiflood
         $this->_control_max_requests = Arr::get($this->_config, 'control_max_requests', 5);
         $this->_control_request_timeout = Arr::get($this->_config, 'control_request_timeout', 3600);
         $this->_control_ban_time = Arr::get($this->_config, 'control_ban_time', 600);
+        $this->_expiration = Arr::get($this->_config, 'expiration', Antiflood::DEFAULT_EXPIRE);
+        if ($this->_expiration < $this->_control_ban_time)
+        {
+            $this->_expiration = $this->_control_ban_time;
+        }
 
-        $this->_control_db = $this->_control_dir . "/control.db";
+        $this->_control_db = $this->_control_dir . "/" . sha1($this->_uri) . ".ser";
         $this->_control_lock_file = $this->_control_dir . "/" . sha1($this->_user_ip . $this->_uri) . ".lock";
     }
 
@@ -104,7 +109,7 @@ class Kohana_Antiflood_File extends Antiflood
     {
         $this->_load_configuration();
         $control = Array();
-        $control_key = sha1($this->_user_ip . $this->_uri);
+        $control_key = $this->_user_ip;
 
         if (file_exists($this->_control_db))
         {
@@ -140,5 +145,55 @@ class Kohana_Antiflood_File extends Antiflood
         fwrite($fh, serialize($control));
         fclose($fh);
     }
+
+	/**
+	 * Garbage collection method that cleans any expired
+	 * antiflood entries from the database file.
+	 *
+	 * @return  void
+	 */
+	public function garbage_collect()
+	{
+            $this->_load_configuration();
+            if (!file_exists($this->_control_db))
+            {
+                return;
+            }
+
+            $now = time();
+            $control = Array();
+
+            $fh = fopen($this->_control_db, "r");
+            $control = array_merge($control, unserialize(fread($fh, filesize($this->_control_db))));
+            fclose($fh);
+
+            foreach ($control as $key => $value)
+            {
+                if ($now - $value['time'] > $this->_expiration)
+                {
+                    unset($control[$key]);
+                    $lock_file = $this->_control_dir . "/" . sha1($key . $this->_uri) . ".lock";
+                    if (file_exists($lock_file) && is_writable($lock_file))
+                    {
+                        unlink($lock_file);
+                    }
+                }
+            }
+
+            if (!empty($control))
+            {
+                $fh = fopen($this->_control_db, "w");
+                fwrite($fh, serialize($control));
+                fclose($fh);
+            }
+            else
+            {
+                if (file_exists($this->_control_db) && is_writable($this->_control_db))
+                {
+                    unlink($this->_control_db);
+                }
+            }
+	    return;
+	}
 
 }
