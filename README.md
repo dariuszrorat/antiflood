@@ -87,8 +87,8 @@ $gc = 10;
 // If the GC probability is a hit
 if (rand(0, 99) <= $gc and $antiflood instanceof Antiflood_GarbageCollect)
 {
-          // Garbage Collect
-          $antiflood->garbage_collect();
+    // Garbage Collect
+    $antiflood->garbage_collect();
 }
 ```
 
