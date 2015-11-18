@@ -75,6 +75,7 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
         $this->_control_request_timeout = Arr::get($this->_config, 'control_request_timeout', 3600);
         $this->_control_ban_time = Arr::get($this->_config, 'control_ban_time', 600);
         $this->_expiration = Arr::get($this->_config, 'expiration', Antiflood::DEFAULT_EXPIRE);
+
         if ($this->_expiration < $this->_control_ban_time)
         {
             $this->_expiration = $this->_control_ban_time;
@@ -142,7 +143,11 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
         }
 
         $fh = fopen($this->_control_db, "w");
-        fwrite($fh, serialize($control));
+        if (flock($fh, LOCK_EX))
+        {
+            fwrite($fh, serialize($control));
+            flock($fh, LOCK_UN);
+        }
         fclose($fh);
     }
 
@@ -183,7 +188,11 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
             if (!empty($control))
             {
                 $fh = fopen($this->_control_db, "w");
-                fwrite($fh, serialize($control));
+                if (flock($fh, LOCK_EX))
+                {
+                    fwrite($fh, serialize($control));
+                    flock($fh, LOCK_UN);
+                }
                 fclose($fh);
             }
             else
