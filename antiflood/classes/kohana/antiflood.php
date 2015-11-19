@@ -40,7 +40,7 @@ abstract class Kohana_Antiflood {
 	 *     // Access an instantiated group directly
 	 *     $foo_group = Antiflood::$instances['default'];
 	 *
-	 * @param   string  $group  the name of the cache group to use [Optional]
+	 * @param   string  $group  the name of the antiflood group to use [Optional]
 	 * @return  Antiflood
 	 * @throws  Antiflood_Exception
 	 */

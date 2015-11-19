@@ -28,12 +28,12 @@ defined('SYSPATH') or die('No direct script access.');
  *
  * #### General antiflood group configuration settings
  *
- * Below are the settings available to all types of cache driver.
+ * Below are the settings available to all types of antiflood driver.
  *
  * Name               | Required | Description
  * --------------     | -------- | ---------------------------------------------------------------
  * driver             | __YES__  | (_string_) The driver type to use
- * control_dir        | __NO__   | (_string_) The cache directory to use for this cache instance
+ * control_dir        | __NO__   | (_string_) The antiflood directory to use for this antiflood instance
  *
  * ### System requirements
  *

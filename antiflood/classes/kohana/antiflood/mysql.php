@@ -31,7 +31,7 @@ defined('SYSPATH') or die('No direct script access.');
  *
  * #### General antiflood group configuration settings
  *
- * Below are the settings available to all types of cache driver.
+ * Below are the settings available to all types of antiflood driver.
  *
  * Name               | Required | Description
  * --------------     | -------- | ---------------------------------------------------------------
@@ -89,11 +89,11 @@ class Kohana_Antiflood_Mysql extends Antiflood_Database
 
             try
             {
-                // Create the caches table
+                // Create the table
                 $this->_db->query(Arr::get($this->_config, 'schema', NULL));
             } catch (PDOException $e)
             {
-                throw new Cache_Exception('Failed to create new SQLite caches table with the following error : :error', array(':error' => $e->getMessage()));
+                throw new Antiflood_Exception('Failed to create new SQLite table with the following error : :error', array(':error' => $e->getMessage()));
             }
         }
     }
