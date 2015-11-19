@@ -4,8 +4,9 @@ defined('SYSPATH') or die('No direct script access.');
 
 abstract class Kohana_Antiflood_Database extends Antiflood implements Antiflood_GarbageCollect
 {
+
     protected $_db;
-    
+
     protected function _load_configuration()
     {
         $this->_control_max_requests = Arr::get($this->_config, 'control_max_requests', 5);
@@ -16,9 +17,8 @@ abstract class Kohana_Antiflood_Database extends Antiflood implements Antiflood_
         {
             $this->_expiration = $this->_control_ban_time;
         }
-
     }
-    
+
     public function check()
     {
         $this->_load_configuration();
@@ -33,14 +33,14 @@ abstract class Kohana_Antiflood_Database extends Antiflood implements Antiflood_
         }
 
         if ($result = $statement->fetch(PDO::FETCH_OBJ))
-        {            
+        {
             $locked = (bool) $result->locked;
-            $locled_access = $result->locked_access;
-            $now = date('Y-m-d H:i:s');
-            
+            $locked_access = $result->locked_access;
+            $now = time();
+
             if ($locked === true)
             {
-                $diff = $this->_seconds_between($now, $locled_access);
+                $diff = $now - $locked_access;
                 if ($diff > $this->_control_ban_time)
                 {
                     $statement = $this->_db->prepare("UPDATE controls SET locked_access = :locked_access, locked = 0 WHERE (user_ip = :user_ip) AND (uri = :uri)");
@@ -80,6 +80,7 @@ abstract class Kohana_Antiflood_Database extends Antiflood implements Antiflood_
     public function count_requests()
     {
         $this->_load_configuration();
+        $now = time();
         $statement = $this->_db->prepare("SELECT * FROM controls WHERE (user_ip = :user_ip) AND (uri = :uri)");
 
         try
@@ -96,7 +97,7 @@ abstract class Kohana_Antiflood_Database extends Antiflood implements Antiflood_
 
             try
             {
-                $statement->execute(array(':user_ip' => $this->_user_ip, ':uri' => $this->_uri, ':last_access' => date('Y-m-d H:i:s')));
+                $statement->execute(array(':user_ip' => $this->_user_ip, ':uri' => $this->_uri, ':last_access' => $now));
             } catch (PDOException $e)
             {
                 throw new Antiflood_Exception('There was a problem querying the local SQLite3 database. :error', array(':error' => $e->getMessage()));
@@ -106,8 +107,8 @@ abstract class Kohana_Antiflood_Database extends Antiflood implements Antiflood_
             $requests = $result->requests;
             $locked_access = $result->locked_access;
             $locked = 0;
-            $now = date('Y-m-d H:i:s');
-            $diff = $this->_seconds_between($now, $result->last_access);
+
+            $diff = $now - $result->last_access;
 
             if ($diff < $this->_control_request_timeout)
             {
@@ -116,7 +117,7 @@ abstract class Kohana_Antiflood_Database extends Antiflood implements Antiflood_
             {
                 $requests = 1;
             }
-            $last_access = date('Y-m-d H:i:s');
+            $last_access = $now;
             if ($requests >= $this->_control_max_requests)
             {
                 $locked = 1;
@@ -136,29 +137,28 @@ abstract class Kohana_Antiflood_Database extends Antiflood implements Antiflood_
         }
     }
 
-	/**
-	 * Garbage collection method that cleans any expired
-	 * antiflood entries from the database.
-	 *
-	 * @return  void
-	 */
-	public function garbage_collect()
-	{
-            $this->_load_configuration();
-            $now = date('Y-m-d H:i:s');
-            $old_date = date('Y-m-d H:i:s', strtotime($now . sprintf('-%d secs', $this->_expiration)));
-            $statement = $this->_db->prepare("DELETE FROM controls WHERE (last_access < :old_date) AND (uri = :uri)");
+    /**
+     * Garbage collection method that cleans any expired
+     * antiflood entries from the database.
+     *
+     * @return  void
+     */
+    public function garbage_collect()
+    {
+        $this->_load_configuration();
+        $now = time();
+        $old_date = $now - $this->_expiration;
+        $statement = $this->_db->prepare("DELETE FROM controls WHERE (last_access < :old_date) AND (uri = :uri)");
 
-            try
-            {
-                $statement->execute(array(':old_date' => $old_date, ':uri' => $this->_uri));
-            } catch (PDOException $e)
-            {
-                throw new Antiflood_Exception('There was a problem querying the local SQLite3 database. :error', array(':error' => $e->getMessage()));
-            }
+        try
+        {
+            $statement->execute(array(':old_date' => $old_date, ':uri' => $this->_uri));
+        } catch (PDOException $e)
+        {
+            throw new Antiflood_Exception('There was a problem querying the local SQLite3 database. :error', array(':error' => $e->getMessage()));
+        }
 
-	    return;
-	}
+        return;
+    }
 
-    
 }
