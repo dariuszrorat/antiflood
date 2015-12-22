@@ -148,17 +148,4 @@ abstract class Kohana_Antiflood {
 		throw new Antiflood_Exception('Cloning of Kohana_Antiflood objects is forbidden');
 	}
 
-    protected function _seconds_between($now, $then)
-    {
-        $datetime_now = new DateTime($now);
-        $datetime_then = new DateTime($then);
-
-        $days = $datetime_then->diff($datetime_now)->format('%d');
-        $hours = $datetime_then->diff($datetime_now)->format('%h');
-        $minutes = $datetime_then->diff($datetime_now)->format('%i');
-        $seconds = $datetime_then->diff($datetime_now)->format('%s');
-        return $days * 24 * 60 * 60 + $hours * 60 * 60 + $minutes * 60 + $seconds;
-    }
-
-
 }

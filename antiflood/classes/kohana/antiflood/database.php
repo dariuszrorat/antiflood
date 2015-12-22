@@ -82,6 +82,7 @@ abstract class Kohana_Antiflood_Database extends Antiflood implements Antiflood_
         $this->_load_configuration();
         $now = time();
         $statement = $this->_db->prepare("SELECT * FROM controls WHERE (user_ip = :user_ip) AND (uri = :uri)");
+        $request_count = 0;
 
         try
         {
@@ -125,6 +126,7 @@ abstract class Kohana_Antiflood_Database extends Antiflood implements Antiflood_
                 $locked_access = $last_access;
             }
 
+            $request_count = $requests;
             $statement = $this->_db->prepare("UPDATE controls SET last_access = :last_access, requests = :requests, locked = :locked, locked_access = :locked_access WHERE (user_ip = :user_ip) AND (uri = :uri)");
 
             try
@@ -135,6 +137,7 @@ abstract class Kohana_Antiflood_Database extends Antiflood implements Antiflood_
                 throw new Antiflood_Exception('There was a problem querying the local SQLite3 database. :error', array(':error' => $e->getMessage()));
             }
         }
+        return $request_count;
     }
 
     /**

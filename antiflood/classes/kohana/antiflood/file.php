@@ -111,6 +111,7 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
         $this->_load_configuration();
         $control = Array();
         $control_key = $this->_user_ip;
+        $request_count = 0;
 
         if (file_exists($this->_control_db))
         {
@@ -141,6 +142,7 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
             fclose($fh);
             $control[$control_key]["count"] = 0;
         }
+        $request_count = $control[$control_key]["count"];
 
         $fh = fopen($this->_control_db, "w");
         if (flock($fh, LOCK_EX))
@@ -149,6 +151,7 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
             flock($fh, LOCK_UN);
         }
         fclose($fh);
+        return $request_count;
     }
 
 	/**
