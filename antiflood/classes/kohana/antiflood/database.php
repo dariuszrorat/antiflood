@@ -176,4 +176,39 @@ abstract class Kohana_Antiflood_Database extends Antiflood implements Antiflood_
         return;
     }
 
+    /**
+     * Delete current antiflood control method
+     *
+     * @return  void
+     */
+    public function delete()
+    {
+        $statement = $this->_db->prepare("DELETE FROM controls WHERE (user_ip = :user_ip) AND (uri = :uri)");
+
+        try
+        {
+            $statement->execute(array(':user_ip' => $this->_user_ip, ':uri' => $this->_uri));
+        } catch (PDOException $e)
+        {
+            throw new Antiflood_Exception('There was a problem querying the local SQLite3 database. :error', array(':error' => $e->getMessage()));
+        }
+
+        return;
+    }
+    
+    public function delete_all()
+    {
+        $statement = $this->_db->prepare("DELETE FROM controls");
+
+        try
+        {
+            $statement->execute();
+        } catch (PDOException $e)
+        {
+            throw new Antiflood_Exception('There was a problem querying the local SQLite3 database. :error', array(':error' => $e->getMessage()));
+        }
+
+        return;        
+    }
+
 }

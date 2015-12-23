@@ -316,4 +316,73 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
         return;
     }
 
+    /**
+     * Delete current antiflood control method
+     *
+     * @return  void
+     */
+    public function delete()
+    {
+        $this->_load_configuration();
+        if (file_exists($this->_control_db) && is_writable($this->_control_db))
+        {
+            try
+            {
+                unlink($this->_control_db);
+            } catch (ErrorException $e)
+            {
+                if ($e->getCode() === E_NOTICE)
+                {
+                    throw new Antiflood_Exception(__METHOD__ . ' failed to unlink control db file with message : ' . $e->getMessage());
+                }
+
+                throw $e;
+            }
+        }
+
+        if (file_exists($this->_control_lock_file) && is_writable($this->_control_lock_file))
+        {
+            try
+            {
+                unlink($this->_control_lock_file);
+            } catch (ErrorException $e)
+            {
+                if ($e->getCode() === E_NOTICE)
+                {
+                    throw new Antiflood_Exception(__METHOD__ . ' failed to unlink control lock file with message : ' . $e->getMessage());
+                }
+
+                throw $e;
+            }
+        }
+        return;
+    }
+
+    public function delete_all()
+    {
+        $this->_load_configuration();
+        $objects = scandir($this->_control_dir);
+
+        try
+        {
+            foreach ($objects as $object)
+            {
+                if ($object != "." && $object != "..")
+                {
+                    $fname = $this->_control_dir . DIRECTORY_SEPARATOR . $object;
+                    unlink($fname);
+                }
+            }
+        } catch (ErrorException $e)
+        {
+            if ($e->getCode() === E_NOTICE)
+            {
+                throw new Antiflood_Exception(__METHOD__ . ' failed to delete all entries with message : ' . $e->getMessage());
+            }
+
+            throw $e;
+        }
+        return;
+    }
+
 }
