@@ -190,7 +190,7 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
             {
                 if ($e->getCode() === E_NOTICE)
                 {
-                    throw new Antiflood_Exception(__METHOD__ . ' failed to serialize control data with message : ' . $e->getMessage());
+                    throw new Antiflood_Exception(__METHOD__ . ' failed to save control lock file with message : ' . $e->getMessage());
                 }
 
                 throw $e;

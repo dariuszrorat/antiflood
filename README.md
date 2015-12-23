@@ -125,9 +125,9 @@ return array(
     'mysql' => array(
         'driver' => 'mysql',
         'hostname' => 'localhost',
-        'database' => 'mydb',
+        'database' => 'mojastrona',
         'username' => 'root',
-        'password' => '',
+        'password' => 'root',
         'schema' =>
         'CREATE TABLE controls (' .
         'id int(10) unsigned NOT NULL AUTO_INCREMENT,' .
@@ -147,9 +147,9 @@ return array(
     'postgresql' => array(
         'driver' => 'postgresql',
         'hostname' => 'localhost',
-        'database' => 'mydb',
+        'database' => 'finance',
         'username' => 'postgres',
-        'password' => '',
+        'password' => 'postgres',
         'schema' =>
         'CREATE TABLE controls' .
         '(' .
@@ -167,6 +167,35 @@ return array(
         'control_ban_time' => 600,
         'expiration' => 172800
     ),
+    'redis' => array(
+        'driver' => 'redis',
+        'control_max_requests' => 3,
+        'control_request_timeout' => 3600,
+        'control_ban_time' => 600,
+        'host' => '127.0.0.1',
+        'port' => 6379,
+        'database' => 15
+    ),
+    'memcache' => array(
+        'driver' => 'memcache',
+        'control_max_requests' => 3,
+        'control_request_timeout' => 3600,
+        'control_ban_time' => 600,
+        'compression' => FALSE, // Use Zlib compression (can cause issues with integers)
+        'servers' => array(
+            'local' => array(
+                'host' => 'localhost', // Memcache Server
+                'port' => 11211, // Memcache port number
+                'persistent' => FALSE, // Persistent connection
+                'weight' => 1,
+                'timeout' => 1,
+                'retry_interval' => 15,
+                'status' => TRUE
+            ),
+        ),
+        // Take server offline immediately on first fail (no retry)
+        'instant_death' => TRUE
+    )
 );
 
 ```
