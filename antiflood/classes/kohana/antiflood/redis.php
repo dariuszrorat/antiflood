@@ -112,35 +112,13 @@ class Kohana_Antiflood_Redis extends Antiflood
             $diff = $now - $data['time'];
             if ($diff > $this->_control_ban_time)
             {
-                try
-                {
-                    $this->_client->del($this->_control_lock_key);
-                    return true;
-                } catch (ErrorException $e)
-                {
-                    if ($e->getCode() === E_NOTICE)
-                    {
-                        throw new Antiflood_Exception(__METHOD__ . ' failed to delete lock key with message : ' . $e->getMessage());
-                    }
-
-                    throw $e;
-                }
+                $this->_client->del($this->_control_lock_key);
+                return true;
             } else
             {
-                try
-                {
-                    $data['time'] = $now;
-                    $this->_client->set($this->_control_lock_key, serialize($data));
-                    return false;
-                } catch (ErrorException $e)
-                {
-                    if ($e->getCode() === E_NOTICE)
-                    {
-                        throw new Antiflood_Exception(__METHOD__ . ' failed to update lock key with message : ' . $e->getMessage());
-                    }
-
-                    throw $e;
-                }
+                $data['time'] = $now;
+                $this->_client->set($this->_control_lock_key, serialize($data));
+                return false;
             }
         } else
         {
@@ -161,19 +139,8 @@ class Kohana_Antiflood_Redis extends Antiflood
         $request_count = 0;
 
 
-        try
-        {
-            $serialized = $this->_client->get($this->_control_db_key);
-            $control = ($serialized !== null) ? unserialize($serialized) : null;
-        } catch (ErrorException $e)
-        {
-            if ($e->getCode() === E_NOTICE)
-            {
-                throw new Antiflood_Exception(__METHOD__ . ' failed to read control data with message : ' . $e->getMessage());
-            }
-
-            throw $e;
-        }
+        $serialized = $this->_client->get($this->_control_db_key);
+        $control = ($serialized !== null) ? unserialize($serialized) : null;
 
         $now = time();
         if ($control !== null)
@@ -193,38 +160,16 @@ class Kohana_Antiflood_Redis extends Antiflood
 
         if ($control["count"] >= $this->_control_max_requests)
         {
-            try
-            {
-                $this->_client->set($this->_control_lock_key, serialize(
-                                array(
-                                    'ip' => $this->_user_ip,
-                                    'uri' => $this->_uri,
-                                    'time' => $now)));
-                $control["count"] = 0;
-            } catch (ErrorException $e)
-            {
-                if ($e->getCode() === E_NOTICE)
-                {
-                    throw new Antiflood_Exception(__METHOD__ . ' failed to set lock data with message : ' . $e->getMessage());
-                }
-
-                throw $e;
-            }
+            $this->_client->set($this->_control_lock_key, serialize(
+                            array(
+                                'ip' => $this->_user_ip,
+                                'uri' => $this->_uri,
+                                'time' => $now)));
+            $control["count"] = 0;
         }
         $request_count = $control["count"];
 
-        try
-        {
-            $this->_client->set($this->_control_db_key, serialize($control));
-        } catch (ErrorException $e)
-        {
-            if ($e->getCode() === E_NOTICE)
-            {
-                throw new Antiflood_Exception(__METHOD__ . ' failed to set control data with message : ' . $e->getMessage());
-            }
-
-            throw $e;
-        }
+        $this->_client->set($this->_control_db_key, serialize($control));
         return $request_count;
     }
 
@@ -234,7 +179,7 @@ class Kohana_Antiflood_Redis extends Antiflood
         $this->_client->del($this->_control_lock_key);
         return;
     }
-    
+
     public function delete_all()
     {
         return;

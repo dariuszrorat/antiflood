@@ -38,6 +38,26 @@ Add:
 
 to Your bootstrap.php
 
+## Requirements
+
+The redis driver requires predis library:
+https://github.com/nrk/predis
+
+Install this library on:
+
+application/vendor
+
+autoload.php must be in:
+
+application/vendor/predis
+
+This library is internal included included by:
+
+```php
+require_once Kohana::find_file('vendor/predis', 'autoload');
+```
+No need to install Redis PHP extension module.
+
 ## Example usage:
 
 Using default file driver:
