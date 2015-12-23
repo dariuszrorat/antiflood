@@ -19,6 +19,12 @@ abstract class Kohana_Antiflood_Database extends Antiflood implements Antiflood_
         }
     }
 
+    /**
+     * Check if user locked
+     *
+     * @return  bool
+     */
+    
     public function check()
     {
         $this->_load_configuration();
@@ -77,6 +83,12 @@ abstract class Kohana_Antiflood_Database extends Antiflood implements Antiflood_
         }
     }
 
+    /**
+     * Count requests, returns elapsed requests
+     *
+     * @return  int
+     */
+    
     public function count_requests()
     {
         $this->_load_configuration();

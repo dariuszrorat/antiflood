@@ -85,6 +85,11 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
         $this->_control_lock_file = $this->_control_dir . "/" . sha1($this->_user_ip . $this->_uri) . ".lock";
     }
 
+    /**
+     * Check if user locked
+     *
+     * @return  bool
+     */
     public function check()
     {
         $this->_load_configuration();
@@ -93,12 +98,34 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
             $diff = time() - filemtime($this->_control_lock_file);
             if ($diff > $this->_control_ban_time)
             {
-                unlink($this->_control_lock_file);
-                return true;
+                try
+                {
+                    unlink($this->_control_lock_file);
+                    return true;
+                } catch (ErrorException $e)
+                {
+                    if ($e->getCode() === E_NOTICE)
+                    {
+                        throw new Antiflood_Exception(__METHOD__ . ' failed to unlink lock file with message : ' . $e->getMessage());
+                    }
+
+                    throw $e;
+                }
             } else
             {
-                touch($this->_control_lock_file);
-                return false;
+                try
+                {
+                    touch($this->_control_lock_file);
+                    return false;
+                } catch (ErrorException $e)
+                {
+                    if ($e->getCode() === E_NOTICE)
+                    {
+                        throw new Antiflood_Exception(__METHOD__ . ' failed to touch lock file with message : ' . $e->getMessage());
+                    }
+
+                    throw $e;
+                }
             }
         } else
         {
@@ -106,6 +133,11 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
         }
     }
 
+    /**
+     * Count requests, returns elapsed requests
+     *
+     * @return  int
+     */
     public function count_requests()
     {
         $this->_load_configuration();
@@ -115,9 +147,20 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
 
         if (file_exists($this->_control_db))
         {
-            $fh = fopen($this->_control_db, "r");
-            $control = array_merge($control, unserialize(fread($fh, filesize($this->_control_db))));
-            fclose($fh);
+            try
+            {
+                $fh = fopen($this->_control_db, "r");
+                $control = array_merge($control, unserialize(fread($fh, filesize($this->_control_db))));
+                fclose($fh);
+            } catch (ErrorException $e)
+            {
+                if ($e->getCode() === E_NOTICE)
+                {
+                    throw new Antiflood_Exception(__METHOD__ . ' failed to unserialize control data with message : ' . $e->getMessage());
+                }
+
+                throw $e;
+            }
         }
 
         if (isset($control[$control_key]))
@@ -137,58 +180,104 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
 
         if ($control[$control_key]["count"] >= $this->_control_max_requests)
         {
-            $fh = fopen($this->_control_lock_file, "w");
-            fwrite($fh, $this->_user_ip . ' ' . $this->_uri);
-            fclose($fh);
-            $control[$control_key]["count"] = 0;
+            try
+            {
+                $fh = fopen($this->_control_lock_file, "w");
+                fwrite($fh, $this->_user_ip . ' ' . $this->_uri);
+                fclose($fh);
+                $control[$control_key]["count"] = 0;
+            } catch (ErrorException $e)
+            {
+                if ($e->getCode() === E_NOTICE)
+                {
+                    throw new Antiflood_Exception(__METHOD__ . ' failed to serialize control data with message : ' . $e->getMessage());
+                }
+
+                throw $e;
+            }
         }
         $request_count = $control[$control_key]["count"];
 
-        $fh = fopen($this->_control_db, "w");
-        if (flock($fh, LOCK_EX))
+        try
         {
-            fwrite($fh, serialize($control));
-            flock($fh, LOCK_UN);
+            $fh = fopen($this->_control_db, "w");
+            if (flock($fh, LOCK_EX))
+            {
+                fwrite($fh, serialize($control));
+                flock($fh, LOCK_UN);
+            }
+            fclose($fh);
+        } catch (ErrorException $e)
+        {
+            if ($e->getCode() === E_NOTICE)
+            {
+                throw new Antiflood_Exception(__METHOD__ . ' failed to serialize control data with message : ' . $e->getMessage());
+            }
+
+            throw $e;
         }
-        fclose($fh);
         return $request_count;
     }
 
-	/**
-	 * Garbage collection method that cleans any expired
-	 * antiflood entries from the database file.
-	 *
-	 * @return  void
-	 */
-	public function garbage_collect()
-	{
-            $this->_load_configuration();
-            if (!file_exists($this->_control_db))
-            {
-                return;
-            }
+    /**
+     * Garbage collection method that cleans any expired
+     * antiflood entries from the database file.
+     *
+     * @return  void
+     */
+    public function garbage_collect()
+    {
+        $this->_load_configuration();
+        if (!file_exists($this->_control_db))
+        {
+            return;
+        }
 
-            $now = time();
-            $control = Array();
+        $now = time();
+        $control = Array();
 
+        try
+        {
             $fh = fopen($this->_control_db, "r");
             $control = array_merge($control, unserialize(fread($fh, filesize($this->_control_db))));
             fclose($fh);
-
-            foreach ($control as $key => $value)
+        } catch (ErrorException $e)
+        {
+            if ($e->getCode() === E_NOTICE)
             {
-                if ($now - $value['time'] > $this->_expiration)
+                throw new Antiflood_Exception(__METHOD__ . ' failed to unserialize control data with message : ' . $e->getMessage());
+            }
+
+            throw $e;
+        }
+
+        foreach ($control as $key => $value)
+        {
+            if ($now - $value['time'] > $this->_expiration)
+            {
+                unset($control[$key]);
+                $lock_file = $this->_control_dir . "/" . sha1($key . $this->_uri) . ".lock";
+                if (file_exists($lock_file) && is_writable($lock_file))
                 {
-                    unset($control[$key]);
-                    $lock_file = $this->_control_dir . "/" . sha1($key . $this->_uri) . ".lock";
-                    if (file_exists($lock_file) && is_writable($lock_file))
+                    try
                     {
                         unlink($lock_file);
+                    } catch (ErrorException $e)
+                    {
+                        if ($e->getCode() === E_NOTICE)
+                        {
+                            throw new Antiflood_Exception(__METHOD__ . ' failed to unlink lock file with message : ' . $e->getMessage());
+                        }
+
+                        throw $e;
                     }
                 }
             }
+        }
 
-            if (!empty($control))
+        if (!empty($control))
+        {
+            try
             {
                 $fh = fopen($this->_control_db, "w");
                 if (flock($fh, LOCK_EX))
@@ -197,15 +286,34 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
                     flock($fh, LOCK_UN);
                 }
                 fclose($fh);
-            }
-            else
+            } catch (ErrorException $e)
             {
-                if (file_exists($this->_control_db) && is_writable($this->_control_db))
+                if ($e->getCode() === E_NOTICE)
+                {
+                    throw new Antiflood_Exception(__METHOD__ . ' failed to serialize control data with message : ' . $e->getMessage());
+                }
+
+                throw $e;
+            }
+        } else
+        {
+            if (file_exists($this->_control_db) && is_writable($this->_control_db))
+            {
+                try
                 {
                     unlink($this->_control_db);
+                } catch (ErrorException $e)
+                {
+                    if ($e->getCode() === E_NOTICE)
+                    {
+                        throw new Antiflood_Exception(__METHOD__ . ' failed to unlink control db file with message : ' . $e->getMessage());
+                    }
+
+                    throw $e;
                 }
             }
-	    return;
-	}
+        }
+        return;
+    }
 
 }
