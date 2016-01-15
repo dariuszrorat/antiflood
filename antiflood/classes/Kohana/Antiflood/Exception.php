@@ -3,7 +3,7 @@
  * Kohana Antiflood Exception
  * 
  * @package    Kohana/Antiflood
- * @category   Safety
+ * @category   Security
  * @author     Dariusz Rorat
  * @copyright  (c) 2015 Dariusz Rorat
  */
