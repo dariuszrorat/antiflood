@@ -27,10 +27,16 @@ defined('SYSPATH') or die('No direct script access.');
  *
  * Below are the settings available to all types of antiflood driver.
  *
- * Name               | Required | Description
- * --------------     | -------- | ---------------------------------------------------------------
- * driver             | __YES__  | (_string_) The driver type to use
-
+ * Name                      | Required | Description
+ * ------------------------- | -------- | ---------------------------------------------------------------
+ * driver                    | __YES__  | (_string_) The driver type to use
+ * control_max_requests      | __YES__  | (_integer_) The maximum of requests in control request timeout
+ * control_request_timeout   | __YES__  | (_integer_) The control request timeout in s
+ * control_ban_time          | __YES__  | (_integer_) The user IP ban time in s
+ * expiration                | __YES__  | (_integer_) The expiration time in s used by garbage collector
+ * host                      | __YES__  | (_string_) The antiflood redis hostname to use for this antiflood instance
+ * port                      | __YES__  | (_integer_) The antiflood redis port to use for this antiflood instance
+ * database                  | __YES__  | (_integer_) The antiflood redis database to use for this antiflood instance
  *
  * ### System requirements
  *
@@ -42,11 +48,9 @@ defined('SYSPATH') or die('No direct script access.');
  * @author     Dariusz Rorat
  * @copyright  (c) 2015 Dariusz Rorat
  */
-require_once Kohana::find_file('vendor/predis', 'autoload');
 
 class Kohana_Antiflood_Redis extends Antiflood
 {
-
     /**
      * @var  string the antiflood control directory
      */
@@ -67,6 +71,8 @@ class Kohana_Antiflood_Redis extends Antiflood
      */
     protected function __construct(array $config)
     {
+        // Using external vendor Predis library
+        require_once Kohana::find_file('vendor/predis', 'autoload');
         // Setup parent
         parent::__construct($config);
 
@@ -85,12 +91,6 @@ class Kohana_Antiflood_Redis extends Antiflood
         $this->_control_max_requests = Arr::get($this->_config, 'control_max_requests', 5);
         $this->_control_request_timeout = Arr::get($this->_config, 'control_request_timeout', 3600);
         $this->_control_ban_time = Arr::get($this->_config, 'control_ban_time', 600);
-        $this->_expiration = Arr::get($this->_config, 'expiration', Antiflood::DEFAULT_EXPIRE);
-
-        if ($this->_expiration < $this->_control_ban_time)
-        {
-            $this->_expiration = $this->_control_ban_time;
-        }
 
         $this->_control_db_key = 'db_' . sha1($this->_user_ip . $this->_uri);
         $this->_control_lock_key = 'lock_' . sha1($this->_user_ip . $this->_uri);
@@ -173,12 +173,24 @@ class Kohana_Antiflood_Redis extends Antiflood
         return $request_count;
     }
 
+    /**
+     * Delete current antiflood control method
+     *
+     * @return  void
+     */
+
     public function delete()
     {
         $this->_client->del($this->_control_db_key);
         $this->_client->del($this->_control_lock_key);
         return;
     }
+
+    /**
+     * Delete all antiflood controls method
+     *
+     * @return  void
+     */
 
     public function delete_all()
     {

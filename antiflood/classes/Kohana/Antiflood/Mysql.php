@@ -3,39 +3,55 @@
 defined('SYSPATH') or die('No direct script access.');
 
 /**
- * [Kohana Antiflood](api/Kohana_Antiflood) Mysql driver. Provides a mysql based
- * driver for the Kohana Antiflood library. This driver can use the same database 
- * file and the same dir for the different URI. 
+ * [Kohana Antiflood](api/Kohana_Antiflood) MySQL driver. Provides a mysql based
+ * driver for the Kohana Antiflood library. This driver can use the same database
+ * for the different URI.
  *
  * ### Configuration example
  *
- * Below is an example of a _file_ server configuration.
+ * Below is an example of a _mysql_ configuration.
  *
  *     return array(
- *     'mysql' => array(
- *       'driver' => 'mysql',
- *       'hostname' => 'localhost',
- *       'database' => 'mysqldb',
- *       'username' => 'root',
- *       'password' => '',
- *       'persistent' => FALSE,
- *       'schema' => 'CREATE TABLE controls(id int(11) UNSIGNED NOT NULL AUTO_INCREMENT, user_ip VARCHAR(20), uri varchar(255), last_access datetime, requests INTEGER, locked INTEGER, locked_access datetime)',
- *       'control_max_requests' => 3,
- *       'control_request_timeout' => 3600,
- *       'control_ban_time' => 600
-    ),
-*     )
- *
- * In cases where only one antiflood group is required, if the group is named `default` there is
- * no need to pass the group name when instantiating a antiflood instance. 
+ *            'mysql' => array(
+ *                'driver' => 'mysql',
+ *                'hostname' => 'localhost',
+ *                'database' => 'mojastrona',
+ *                'username' => 'root',
+ *                'password' => 'root',
+ *                'schema' =>
+ *                'CREATE TABLE controls (' .
+ *                'id int(10) unsigned NOT NULL AUTO_INCREMENT,' .
+ *                'user_ip varchar(20) NOT NULL,' .
+ *                'uri varchar(255) NOT NULL,' .
+ *                'last_access INT(11) NOT NULL,' .
+ *                'requests int(10) unsigned NOT NULL,' .
+ *                'locked tinyint(1) NOT NULL,' .
+ *                'locked_access INT(11) NOT NULL,' .
+ *                'PRIMARY KEY (id)' .
+ *                ') ENGINE=InnoDB DEFAULT CHARSET=utf8;',
+ *                'control_max_requests' => 3,
+ *                'control_request_timeout' => 3600,
+ *                'control_ban_time' => 20,
+ *                'expiration' => 172800
+ *            ),
+ *     )
  *
  * #### General antiflood group configuration settings
  *
  * Below are the settings available to all types of antiflood driver.
  *
- * Name               | Required | Description
- * --------------     | -------- | ---------------------------------------------------------------
- * driver             | __YES__  | (_string_) The driver type to use
+ * Name                      | Required | Description
+ * ------------------------- | -------- | ---------------------------------------------------------------
+ * driver                    | __YES__  | (_string_) The driver type to use
+ * hostname                  | __YES__  | (_string_) The antiflood database hostname to use for this antiflood instance
+ * database                  | __YES__  | (_string_) The antiflood database to use for this antiflood instance
+ * username                  | __YES__  | (_string_) The antiflood database username to use for this antiflood instance
+ * password                  | __YES__  | (_string_) The antiflood database password to use for this antiflood instance
+ * schema                    | __YES__  | (_string_) The antiflood table schema to use for this antiflood instance
+ * control_max_requests      | __YES__  | (_integer_) The maximum of requests in control request timeout
+ * control_request_timeout   | __YES__  | (_integer_) The control request timeout in s
+ * control_ban_time          | __YES__  | (_integer_) The user IP ban time in s
+ * expiration                | __YES__  | (_integer_) The expiration time in s used by garbage collector
  *
  * ### System requirements
  *

@@ -10,7 +10,7 @@ defined('SYSPATH') or die('No direct script access.');
  *
  * ### Configuration example
  *
- * Below is an example of a _file_ server configuration.
+ * Below is an example of a _file_ configuration.
  *
  *     return array(
  *          'file'   => array(                          // File driver group
@@ -18,7 +18,8 @@ defined('SYSPATH') or die('No direct script access.');
  *                  'control_dir'     => APPPATH.'control/antiflood', // Control location
  *                  'control_max_requests'    => 5,
  *                  'control_request_timeout' => 3600,
- *                  'control_ban_time'        => 600
+ *                  'control_ban_time'        => 600,
+ *                  'expiration'              => 172800
  *           ),
  *     )
  *
@@ -30,10 +31,14 @@ defined('SYSPATH') or die('No direct script access.');
  *
  * Below are the settings available to all types of antiflood driver.
  *
- * Name               | Required | Description
- * --------------     | -------- | ---------------------------------------------------------------
- * driver             | __YES__  | (_string_) The driver type to use
- * control_dir        | __NO__   | (_string_) The antiflood directory to use for this antiflood instance
+ * Name                      | Required | Description
+ * ------------------------- | -------- | ---------------------------------------------------------------
+ * driver                    | __YES__  | (_string_) The driver type to use
+ * control_dir               | __YES__  | (_string_) The antiflood directory to use for this antiflood instance
+ * control_max_requests      | __YES__  | (_integer_) The maximum of requests in control request timeout
+ * control_request_timeout   | __YES__  | (_integer_) The control request timeout in s
+ * control_ban_time          | __YES__  | (_integer_) The user IP ban time in s
+ * expiration                | __YES__  | (_integer_) The expiration time in s used by garbage collector
  *
  * ### System requirements
  *
@@ -357,6 +362,12 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
         }
         return;
     }
+
+    /**
+     * Delete all antiflood controls method
+     *
+     * @return  void
+     */
 
     public function delete_all()
     {

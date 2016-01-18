@@ -4,17 +4,46 @@ defined('SYSPATH') or die('No direct script access.');
 
 /**
  * [Kohana Antiflood](api/Kohana_Antiflood) Memcache driver. Provides a memcache based
- * driver for the Kohana Antiflood library. 
- * *
+ * driver for the Kohana Antiflood library.
+ *
+ * ### Configuration example
+ *
+ * Below is an example of a _file_ server configuration.
+ *
+ *     return array(
+ *         'memcache' => array(
+ *             'driver' => 'memcache',
+ *             'control_max_requests' => 3,
+ *             'control_request_timeout' => 3600,
+ *             'control_ban_time' => 600,
+ *             'compression' => FALSE, // Use Zlib compression (can cause issues with integers)
+ *             'servers' => array(
+ *                 'local' => array(
+ *                     'host' => 'localhost', // Memcache Server
+ *                     'port' => 11211, // Memcache port number
+ *                     'persistent' => FALSE, // Persistent connection
+ *                     'weight' => 1,
+ *                     'timeout' => 1,
+ *                     'retry_interval' => 15,
+ *                     'status' => TRUE
+ *                 ),
+ *             ),
+ *             // Take server offline immediately on first fail (no retry)
+ *             'instant_death' => TRUE
+ *         )
+ *     )
+ *
  *
  * #### General antiflood group configuration settings
  *
  * Below are the settings available to all types of antiflood driver.
  *
- * Name               | Required | Description
- * --------------     | -------- | ---------------------------------------------------------------
- * driver             | __YES__  | (_string_) The driver type to use
-
+ * Name                          | Required | Description
+ * ----------------------------- | -------- | ---------------------------------------------------------------
+ * driver                        | __YES__  | (_string_) The driver type to use
+ * control_max_requests          | __YES__  | (_integer_) The maximum of requests in control request timeout
+ * control_request_timeout       | __YES__  | (_integer_) The control request timeout in s
+ * control_ban_time              | __YES__  | (_integer_) The user IP ban time in s
  *
  * ### System requirements
  *
@@ -123,12 +152,6 @@ class Kohana_Antiflood_Memcache extends Antiflood
         $this->_control_max_requests = Arr::get($this->_config, 'control_max_requests', 5);
         $this->_control_request_timeout = Arr::get($this->_config, 'control_request_timeout', 3600);
         $this->_control_ban_time = Arr::get($this->_config, 'control_ban_time', 600);
-        $this->_expiration = Arr::get($this->_config, 'expiration', Antiflood::DEFAULT_EXPIRE);
-
-        if ($this->_expiration < $this->_control_ban_time)
-        {
-            $this->_expiration = $this->_control_ban_time;
-        }
 
         $this->_control_db_key = 'db_' . sha1($this->_user_ip . $this->_uri);
         $this->_control_lock_key = 'lock_' . sha1($this->_user_ip . $this->_uri);
@@ -212,6 +235,12 @@ class Kohana_Antiflood_Memcache extends Antiflood
         return $request_count;
     }
 
+    /**
+     * Delete current antiflood control method
+     *
+     * @return  void
+     */
+
     public function delete($timeout = 0)
     {
         $this->_memcache->delete($this->_control_db_key, $timeout);
@@ -219,12 +248,24 @@ class Kohana_Antiflood_Memcache extends Antiflood
         return;
     }
 
+    /**
+     * Delete all antiflood controls method
+     *
+     * @return  void
+     */
+
     public function delete_all()
     {
         $result = $this->_memcache->flush();
         sleep(1);
         return $result;
     }
+
+    /**
+     * Failure callback method
+     *
+     * @return  mixed
+     */
 
     public function _failed_request($hostname, $port)
     {

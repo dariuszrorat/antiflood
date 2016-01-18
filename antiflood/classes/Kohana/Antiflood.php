@@ -1,4 +1,71 @@
 <?php defined('SYSPATH') or die('No direct script access.');
+/**
+ * Kohana Antiflood provides a common interface to a variety of antiflood engines.
+ * Kohana Antiflood supports multiple instances of antiflood engines through a
+ * grouped singleton pattern.
+ *
+ * ### Supported antiflood engines
+ *
+ * *  File
+ * *  [Memcache](http://memcached.org/)
+ * *  [Redis](http://redis.io/)
+ * *  [SQLite](http://www.sqlite.org/)
+ * *  [MySQL](http://www.mysql.com/)
+ * *  [PostgreSQL](http://www.postgresql.org/)
+ *
+ * ### Introduction to antiflood
+ *
+ * Antiflood used to protect applications against too many requests at a given time.
+ * User will be blocked for a certain time based on its IP if it exceeds a set limit
+ * requests at a given time.
+ *
+ * ### Configuration settings
+ *
+ * Kohana Antiflood uses configuration groups to create cache instances. A configuration group can
+ * use any supported driver, with successive groups using the same driver type if required.
+ *
+ * #### Configuration example
+ *
+ *
+ *     return array(
+ *            'file' => array(
+ *                   'driver' => 'file',
+ *                   'control_dir' => APPPATH . 'control/antiflood',
+ *                   'control_max_requests' => 3,
+ *                   'control_request_timeout' => 3600,
+ *                   'control_ban_time' => 600,
+ *                   'expiration' => 172800
+ *                  ),
+ *     )
+ *
+ *
+ * #### General antiflood group configuration settings
+ *
+ * Below are the settings available to all types of antiflood driver.
+ *
+ * Name                      | Required | Description
+ * --------------            | -------- | ---------------------------------------------------------------
+ * driver                    | __YES__  | (_string_) The driver type to use
+ * control_max_requests      | __YES__  | (_integer_) The maximum of requests in control request timeout
+ * control_request_timeout   | __YES__  | (_integer_) The control request timeout in s
+ * control_ban_time          | __YES__  | (_integer_) The user IP ban time in s
+ * expiration                | __YES__  | (_integer_) The expiration time in s used by garbage collector
+
+ *
+ * Details of the settings specific to each driver are available within the drivers documentation.
+ *
+ * ### System requirements
+ *
+ * *  Kohana 3.0.x
+ * *  PHP 5.2.4 or greater
+ *
+ * @package    Kohana/Antiflood
+ * @category   Security
+ * @version    1.0
+ * @author     Dariusz Rorat
+ * @copyright  (c) 2015-2016 Dariusz Rorat
+ * @license    GNU GPL
+ */
 
 abstract class Kohana_Antiflood {
 
@@ -34,13 +101,7 @@ abstract class Kohana_Antiflood {
 	 *     // Create an instance of the default group
 	 *     $default_group = Antiflood::instance();
 	 *
-	 *     // Create an instance of a group
-	 *     $foo_group = Antiflood::instance('foo');
-	 *
-	 *     // Access an instantiated group directly
-	 *     $foo_group = Antiflood::$instances['default'];
-	 *
-	 * @param   string  $group  the name of the antiflood group to use [Optional]
+	 * @param   string  $group the name of the antiflood group to use [Optional]
 	 * @return  Antiflood
 	 * @throws  Antiflood_Exception
 	 */

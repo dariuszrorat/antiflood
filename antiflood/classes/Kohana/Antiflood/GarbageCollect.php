@@ -8,7 +8,6 @@
  * @version    1.0
  * @author     Dariusz Rorat
  * @copyright  (c) 2015 Dariusz Rorat
- * @license    GPL 2.0
  */
 interface Kohana_Antiflood_GarbageCollect {
 	/**

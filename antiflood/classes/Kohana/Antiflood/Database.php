@@ -195,7 +195,13 @@ abstract class Kohana_Antiflood_Database extends Antiflood implements Antiflood_
 
         return;
     }
-    
+
+    /**
+     * Delete all antiflood control method
+     *
+     * @return  void
+     */
+
     public function delete_all()
     {
         $statement = $this->_db->prepare("DELETE FROM controls");

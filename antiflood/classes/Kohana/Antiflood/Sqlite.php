@@ -9,30 +9,32 @@ defined('SYSPATH') or die('No direct script access.');
  *
  * ### Configuration example
  *
- * Below is an example of a _file_ server configuration.
+ * Below is an example of a _sqlite_ configuration.
  *
  *     return array(
- * 	'sqlite'   => array(
- * 		'driver'             => 'sqlite',
- * 		'database'           => APPPATH.'control/antiflood/kohana-antiflood.sql3',
- * 		'schema'             => 'CREATE TABLE controls(id integer PRIMARY KEY AUTOINCREMENT, ip VARCHAR(20), requests INTEGER, locked INTEGER)',
- *              'control_max_requests'    => 3,
- *              'control_request_timeout' => 3600,
- *              'control_ban_time'        => 600
- * 	),
+ *         'sqlite' => array(
+ *             'driver' => 'sqlite',
+ *             'database' => APPPATH . 'control/antiflood/kohana-antiflood.sql3',
+ *             'schema' => 'CREATE TABLE controls(id integer PRIMARY KEY AUTOINCREMENT, user_ip VARCHAR(20), uri varchar(255), last_access datetime, requests INTEGER, locked INTEGER, locked_access datetime)',
+ *             'control_max_requests' => 3,
+ *             'control_request_timeout' => 3600,
+ *             'control_ban_time' => 600,
+ *             'expiration' => 172800
+ *         )
  *     )
- *
- * In cases where only one antiflood group is required, if the group is named `default` there is
- * no need to pass the group name when instantiating a antiflood instance. The database dir 
- * APPPATH.'control/antiflood/ must be created on disk.
  *
  * #### General antiflood group configuration settings
  *
  * Below are the settings available to all types of antiflood driver.
  *
- * Name               | Required | Description
- * --------------     | -------- | ---------------------------------------------------------------
- * driver             | __YES__  | (_string_) The driver type to use
+ * Name                      | Required | Description
+ * ------------------------- | -------- | ---------------------------------------------------------------
+ * driver                    | __YES__  | (_string_) The driver type to use
+ * database                  | __YES__  | (_string_) The antiflood database file to use for this antiflood instance
+ * control_max_requests      | __YES__  | (_integer_) The maximum of requests in control request timeout
+ * control_request_timeout   | __YES__  | (_integer_) The control request timeout in s
+ * control_ban_time          | __YES__  | (_integer_) The user IP ban time in s
+ * expiration                | __YES__  | (_integer_) The expiration time in s used by garbage collector
  *
  * ### System requirements
  *
