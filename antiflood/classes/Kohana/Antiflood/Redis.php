@@ -87,10 +87,9 @@ class Kohana_Antiflood_Redis extends Antiflood
 
     protected function _load_configuration()
     {
-        $this->_control_dir = Arr::get($this->_config, 'control_dir', APPPATH . 'control/antiflood');
-        $this->_control_max_requests = Arr::get($this->_config, 'control_max_requests', 5);
-        $this->_control_request_timeout = Arr::get($this->_config, 'control_request_timeout', 3600);
-        $this->_control_ban_time = Arr::get($this->_config, 'control_ban_time', 600);
+        $this->_control_max_requests = Arr::get($this->_config, 'control_max_requests', Antiflood::DEFAULT_MAX_REQUESTS);
+        $this->_control_request_timeout = Arr::get($this->_config, 'control_request_timeout', Antiflood::DEFAULT_REQUEST_TIMEOUT);
+        $this->_control_ban_time = Arr::get($this->_config, 'control_ban_time', Antiflood::DEFAULT_BAN_TIME);
 
         $this->_control_db_key = 'db_' . sha1($this->_user_ip . $this->_uri);
         $this->_control_lock_key = 'lock_' . sha1($this->_user_ip . $this->_uri);

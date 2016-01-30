@@ -69,6 +69,9 @@
 
 abstract class Kohana_Antiflood {
 
+        const DEFAULT_MAX_REQUESTS = 5;
+        const DEFAULT_REQUEST_TIMEOUT = 3600;
+        const DEFAULT_BAN_TIME = 600;
         const DEFAULT_EXPIRE = 3600;
 
 	protected $_control_max_requests;

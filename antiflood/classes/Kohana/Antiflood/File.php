@@ -76,9 +76,9 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
     protected function _load_configuration()
     {
         $this->_control_dir = Arr::get($this->_config, 'control_dir', APPPATH . 'control/antiflood');
-        $this->_control_max_requests = Arr::get($this->_config, 'control_max_requests', 5);
-        $this->_control_request_timeout = Arr::get($this->_config, 'control_request_timeout', 3600);
-        $this->_control_ban_time = Arr::get($this->_config, 'control_ban_time', 600);
+        $this->_control_max_requests = Arr::get($this->_config, 'control_max_requests', Antiflood::DEFAULT_MAX_REQUESTS);
+        $this->_control_request_timeout = Arr::get($this->_config, 'control_request_timeout', Antiflood::DEFAULT_REQUEST_TIMEOUT);
+        $this->_control_ban_time = Arr::get($this->_config, 'control_ban_time', Antiflood::DEFAULT_BAN_TIME);
         $this->_expiration = Arr::get($this->_config, 'expiration', Antiflood::DEFAULT_EXPIRE);
 
         if ($this->_expiration < $this->_control_ban_time)
@@ -98,39 +98,19 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
     public function check()
     {
         $this->_load_configuration();
-        if (file_exists($this->_control_lock_file))
+        // Open file
+        $resource = new SplFileInfo($this->_control_lock_file);
+
+        // If file exists
+        if ($resource->isFile())
         {
-            $diff = time() - filemtime($this->_control_lock_file);
+            $diff = time() - $resource->getMTime();
             if ($diff > $this->_control_ban_time)
             {
-                try
-                {
-                    unlink($this->_control_lock_file);
-                    return true;
-                } catch (ErrorException $e)
-                {
-                    if ($e->getCode() === E_NOTICE)
-                    {
-                        throw new Antiflood_Exception(__METHOD__ . ' failed to unlink lock file with message : ' . $e->getMessage());
-                    }
-
-                    throw $e;
-                }
+                return $this->_delete_file($resource);
             } else
             {
-                try
-                {
-                    touch($this->_control_lock_file);
-                    return false;
-                } catch (ErrorException $e)
-                {
-                    if ($e->getCode() === E_NOTICE)
-                    {
-                        throw new Antiflood_Exception(__METHOD__ . ' failed to touch lock file with message : ' . $e->getMessage());
-                    }
-
-                    throw $e;
-                }
+                return !$this->_update_filemtime($resource);
             }
         } else
         {
@@ -150,13 +130,27 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
         $control_key = $this->_user_ip;
         $request_count = 0;
 
-        if (file_exists($this->_control_db))
+        // Open file
+        $resource = new SplFileInfo($this->_control_db);
+
+        // If file exists
+        if ($resource->isFile())
         {
             try
             {
-                $fh = fopen($this->_control_db, "r");
-                $control = array_merge($control, unserialize(fread($fh, filesize($this->_control_db))));
-                fclose($fh);
+                $data = $resource->openFile();
+                if ($data->eof())
+                {
+                    throw new Antiflood_Exception(__METHOD__ . ' corrupted control data file!');
+                }
+                $serialized_data = '';
+
+                while ($data->eof() === FALSE)
+                {
+                    $serialized_data .= $data->fgets();
+                }
+
+                $control = array_merge($control, unserialize($serialized_data));
             } catch (ErrorException $e)
             {
                 if ($e->getCode() === E_NOTICE)
@@ -185,11 +179,16 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
 
         if ($control[$control_key]["count"] >= $this->_control_max_requests)
         {
+            // Open lock file to inspect
+            $resouce = new SplFileInfo($this->_control_lock_file);
+            $file = $resouce->openFile('w');
+
             try
             {
-                $fh = fopen($this->_control_lock_file, "w");
-                fwrite($fh, $this->_user_ip . ' ' . $this->_uri);
-                fclose($fh);
+                $data = $this->_user_ip . "\n" . $this->_uri;
+                $file->fwrite($data, strlen($data));
+                $file->fflush();
+
                 $control[$control_key]["count"] = 0;
             } catch (ErrorException $e)
             {
@@ -203,15 +202,15 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
         }
         $request_count = $control[$control_key]["count"];
 
+        // Open control db file to inspect
+        $resouce = new SplFileInfo($this->_control_db);
+        $file = $resouce->openFile('w');
+
         try
         {
-            $fh = fopen($this->_control_db, "w");
-            if (flock($fh, LOCK_EX))
-            {
-                fwrite($fh, serialize($control));
-                flock($fh, LOCK_UN);
-            }
-            fclose($fh);
+            $data = serialize($control);
+            $file->fwrite($data, strlen($data));
+            $file->fflush();
         } catch (ErrorException $e)
         {
             if ($e->getCode() === E_NOTICE)
@@ -233,7 +232,11 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
     public function garbage_collect()
     {
         $this->_load_configuration();
-        if (!file_exists($this->_control_db))
+        // Open control db file
+        $resource = new SplFileInfo($this->_control_db);
+
+        // If file does not exist return
+        if (!$resource->isFile())
         {
             return;
         }
@@ -243,9 +246,19 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
 
         try
         {
-            $fh = fopen($this->_control_db, "r");
-            $control = array_merge($control, unserialize(fread($fh, filesize($this->_control_db))));
-            fclose($fh);
+            $data = $resource->openFile();
+            if ($data->eof())
+            {
+                throw new Antiflood_Exception(__METHOD__ . ' corrupted control data file!');
+            }
+            $serialized_data = '';
+
+            while ($data->eof() === FALSE)
+            {
+                $serialized_data .= $data->fgets();
+            }
+
+            $control = array_merge($control, unserialize($serialized_data));
         } catch (ErrorException $e)
         {
             if ($e->getCode() === E_NOTICE)
@@ -262,35 +275,21 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
             {
                 unset($control[$key]);
                 $lock_file = $this->_control_dir . "/" . sha1($key . $this->_uri) . ".lock";
-                if (file_exists($lock_file) && is_writable($lock_file))
-                {
-                    try
-                    {
-                        unlink($lock_file);
-                    } catch (ErrorException $e)
-                    {
-                        if ($e->getCode() === E_NOTICE)
-                        {
-                            throw new Antiflood_Exception(__METHOD__ . ' failed to unlink lock file with message : ' . $e->getMessage());
-                        }
-
-                        throw $e;
-                    }
-                }
+                $resource = new SplFileInfo($lock_file);
+                $this->_delete_file($resource);
             }
         }
 
         if (!empty($control))
         {
+            $resouce = new SplFileInfo($this->_control_db);
+            $file = $resouce->openFile('w');
+
             try
             {
-                $fh = fopen($this->_control_db, "w");
-                if (flock($fh, LOCK_EX))
-                {
-                    fwrite($fh, serialize($control));
-                    flock($fh, LOCK_UN);
-                }
-                fclose($fh);
+                $data = serialize($control);
+                $file->fwrite($data, strlen($data));
+                $file->fflush();
             } catch (ErrorException $e)
             {
                 if ($e->getCode() === E_NOTICE)
@@ -302,21 +301,8 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
             }
         } else
         {
-            if (file_exists($this->_control_db) && is_writable($this->_control_db))
-            {
-                try
-                {
-                    unlink($this->_control_db);
-                } catch (ErrorException $e)
-                {
-                    if ($e->getCode() === E_NOTICE)
-                    {
-                        throw new Antiflood_Exception(__METHOD__ . ' failed to unlink control db file with message : ' . $e->getMessage());
-                    }
-
-                    throw $e;
-                }
-            }
+            $resouce = new SplFileInfo($this->_control_db);
+            $this->_delete_file($resouce);
         }
         return;
     }
@@ -329,37 +315,12 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
     public function delete()
     {
         $this->_load_configuration();
-        if (file_exists($this->_control_db) && is_writable($this->_control_db))
-        {
-            try
-            {
-                unlink($this->_control_db);
-            } catch (ErrorException $e)
-            {
-                if ($e->getCode() === E_NOTICE)
-                {
-                    throw new Antiflood_Exception(__METHOD__ . ' failed to unlink control db file with message : ' . $e->getMessage());
-                }
-
-                throw $e;
-            }
-        }
-
-        if (file_exists($this->_control_lock_file) && is_writable($this->_control_lock_file))
-        {
-            try
-            {
-                unlink($this->_control_lock_file);
-            } catch (ErrorException $e)
-            {
-                if ($e->getCode() === E_NOTICE)
-                {
-                    throw new Antiflood_Exception(__METHOD__ . ' failed to unlink control lock file with message : ' . $e->getMessage());
-                }
-
-                throw $e;
-            }
-        }
+        // Delete control db file
+        $resource = new SplFileInfo($this->_control_db);
+        $this->_delete_file($resource);
+        // Delete control lok file
+        $resource = new SplFileInfo($this->_control_lock_file);
+        $this->_delete_file($resource);
         return;
     }
 
@@ -372,28 +333,99 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
     public function delete_all()
     {
         $this->_load_configuration();
-        $objects = scandir($this->_control_dir);
 
+        // Create new DirectoryIterator
+        $files = new DirectoryIterator($this->_control_dir);
+
+        // Iterate over each entry
+        while ($files->valid())
+        {
+            // Extract the entry name
+            $name = $files->getFilename();
+
+            // If the name is not a dot
+            if ($name != '.' AND $name != '..')
+            {
+                // Create new file resource
+                $resource = new SplFileInfo($files->getRealPath());
+                // Delete the file
+                $this->_delete_file($resource);
+            }
+
+            // Move the file pointer on
+            $files->next();
+        }
+        // Remove the files iterator
+        // (fixes Windows PHP which has permission issues with open iterators)
+        unset($files);
+
+        return;
+    }
+
+    /**
+     * Update file modification time using SplFileInfo
+     *
+     * @return  bool
+     */
+
+    protected function _update_filemtime(SplFileInfo $file)
+    {
         try
         {
-            foreach ($objects as $object)
+            if ($file->isFile())
             {
-                if ($object != "." && $object != "..")
-                {
-                    $fname = $this->_control_dir . DIRECTORY_SEPARATOR . $object;
-                    unlink($fname);
-                }
+                touch($file->getRealPath());
+                return true;
+            } else
+            {
+                return false;
             }
         } catch (ErrorException $e)
         {
             if ($e->getCode() === E_NOTICE)
             {
-                throw new Antiflood_Exception(__METHOD__ . ' failed to delete all entries with message : ' . $e->getMessage());
+                throw new Antiflood_Exception(__METHOD__ . ' failed to update filemtime with message : ' . $e->getMessage());
             }
 
             throw $e;
         }
-        return;
+    }
+
+    /**
+     * Delete file using SplFileInfo
+     *
+     * @return  bool
+     */
+
+    protected function _delete_file(SplFileInfo $file)
+    {
+        try
+        {
+            // If is file
+            if ($file->isFile())
+            {
+                try
+                {
+                    return unlink($file->getRealPath());
+                } catch (ErrorException $e)
+                {
+                    // Catch any delete file warnings
+                    if ($e->getCode() === E_WARNING)
+                    {
+                        throw new Antiflood_Exception(__METHOD__ . ' failed to delete file : :file', array(':file' => $file->getRealPath()));
+                    }
+                }
+            } else
+            {
+                return false;
+            }
+        }
+        // Catch all exceptions
+        catch (Exception $e)
+        {
+            // Throw exception
+            throw $e;
+        }
     }
 
 }
