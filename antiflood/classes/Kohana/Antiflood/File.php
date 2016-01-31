@@ -153,12 +153,7 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
                 $control = array_merge($control, unserialize($serialized_data));
             } catch (ErrorException $e)
             {
-                if ($e->getCode() === E_NOTICE)
-                {
-                    throw new Antiflood_Exception(__METHOD__ . ' failed to unserialize control data with message : ' . $e->getMessage());
-                }
-
-                throw $e;
+                throw new Antiflood_Exception(__METHOD__ . ' failed to unserialize control data with message : ' . $e->getMessage());
             }
         }
 
@@ -192,12 +187,7 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
                 $control[$control_key]["count"] = 0;
             } catch (ErrorException $e)
             {
-                if ($e->getCode() === E_NOTICE)
-                {
-                    throw new Antiflood_Exception(__METHOD__ . ' failed to save control lock file with message : ' . $e->getMessage());
-                }
-
-                throw $e;
+                throw new Antiflood_Exception(__METHOD__ . ' failed to save control lock file with message : ' . $e->getMessage());
             }
         }
         $request_count = $control[$control_key]["count"];
@@ -213,12 +203,7 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
             $file->fflush();
         } catch (ErrorException $e)
         {
-            if ($e->getCode() === E_NOTICE)
-            {
-                throw new Antiflood_Exception(__METHOD__ . ' failed to serialize control data with message : ' . $e->getMessage());
-            }
-
-            throw $e;
+            throw new Antiflood_Exception(__METHOD__ . ' failed to serialize control data with message : ' . $e->getMessage());
         }
         return $request_count;
     }
@@ -261,12 +246,7 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
             $control = array_merge($control, unserialize($serialized_data));
         } catch (ErrorException $e)
         {
-            if ($e->getCode() === E_NOTICE)
-            {
-                throw new Antiflood_Exception(__METHOD__ . ' failed to unserialize control data with message : ' . $e->getMessage());
-            }
-
-            throw $e;
+            throw new Antiflood_Exception(__METHOD__ . ' failed to unserialize control data with message : ' . $e->getMessage());
         }
 
         foreach ($control as $key => $value)
@@ -292,12 +272,7 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
                 $file->fflush();
             } catch (ErrorException $e)
             {
-                if ($e->getCode() === E_NOTICE)
-                {
-                    throw new Antiflood_Exception(__METHOD__ . ' failed to serialize control data with message : ' . $e->getMessage());
-                }
-
-                throw $e;
+                throw new Antiflood_Exception(__METHOD__ . ' failed to serialize control data with message : ' . $e->getMessage());
             }
         } else
         {
@@ -382,12 +357,7 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
             }
         } catch (ErrorException $e)
         {
-            if ($e->getCode() === E_NOTICE)
-            {
-                throw new Antiflood_Exception(__METHOD__ . ' failed to update filemtime with message : ' . $e->getMessage());
-            }
-
-            throw $e;
+            throw new Antiflood_Exception(__METHOD__ . ' failed to update filemtime with message : ' . $e->getMessage());
         }
     }
 
