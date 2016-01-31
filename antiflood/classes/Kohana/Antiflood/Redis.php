@@ -31,6 +31,7 @@ defined('SYSPATH') or die('No direct script access.');
  * Name                      | Required | Description
  * ------------------------- | -------- | ---------------------------------------------------------------
  * driver                    | __YES__  | (_string_) The driver type to use
+ * control_key               | __YES__  | (_string_) The control key used to check (IP or anything)
  * control_max_requests      | __YES__  | (_integer_) The maximum of requests in control request timeout
  * control_request_timeout   | __YES__  | (_integer_) The control request timeout in s
  * control_ban_time          | __YES__  | (_integer_) The user IP ban time in s
@@ -93,8 +94,8 @@ class Kohana_Antiflood_Redis extends Antiflood
         $this->_control_request_timeout = Arr::get($this->_config, 'control_request_timeout', Antiflood::DEFAULT_REQUEST_TIMEOUT);
         $this->_control_ban_time = Arr::get($this->_config, 'control_ban_time', Antiflood::DEFAULT_BAN_TIME);
 
-        $this->_control_db_key = 'db_' . sha1($this->_user_ip . $this->_uri);
-        $this->_control_lock_key = 'lock_' . sha1($this->_user_ip . $this->_uri);
+        $this->_control_db_key = 'db_' . sha1($this->_control_key);
+        $this->_control_lock_key = 'lock_' . sha1($this->_control_key);
     }
 
     /**

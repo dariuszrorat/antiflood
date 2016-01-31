@@ -32,6 +32,7 @@ defined('SYSPATH') or die('No direct script access.');
  * ------------------------- | -------- | ---------------------------------------------------------------
  * driver                    | __YES__  | (_string_) The driver type to use
  * database                  | __YES__  | (_string_) The antiflood database file to use for this antiflood instance
+ * control_key               | __YES__  | (_string_) The control key used to check (IP or anything)
  * control_max_requests      | __YES__  | (_integer_) The maximum of requests in control request timeout
  * control_request_timeout   | __YES__  | (_integer_) The control request timeout in s
  * control_ban_time          | __YES__  | (_integer_) The user IP ban time in s
