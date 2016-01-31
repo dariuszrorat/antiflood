@@ -86,7 +86,7 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
             $this->_expiration = $this->_control_ban_time;
         }
 
-        $this->_control_db = $this->_control_dir . "/" . sha1($this->_uri) . ".ser";
+        $this->_control_db = $this->_control_dir . "/" . sha1($this->_user_ip . $this->_uri) . ".ser";
         $this->_control_lock_file = $this->_control_dir . "/" . sha1($this->_user_ip . $this->_uri) . ".lock";
     }
 
@@ -127,52 +127,29 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
     {
         $this->_load_configuration();
         $control = Array();
-        $control_key = $this->_user_ip;
         $request_count = 0;
 
         // Open file
         $resource = new SplFileInfo($this->_control_db);
+        $now = time();
 
-        // If file exists
-        if ($resource->isFile())
+        $control = $this->_unserialize($resource);
+        // If array not empty
+        if (!empty($control))
         {
-            try
+            if ($now - $control["time"] < $this->_control_request_timeout)
             {
-                $data = $resource->openFile();
-                if ($data->eof())
-                {
-                    throw new Antiflood_Exception(__METHOD__ . ' corrupted control data file!');
-                }
-                $serialized_data = '';
-
-                while ($data->eof() === FALSE)
-                {
-                    $serialized_data .= $data->fgets();
-                }
-
-                $control = array_merge($control, unserialize($serialized_data));
-            } catch (ErrorException $e)
-            {
-                throw new Antiflood_Exception(__METHOD__ . ' failed to unserialize control data with message : ' . $e->getMessage());
-            }
-        }
-
-        if (isset($control[$control_key]))
-        {
-            if (time() - $control[$control_key]["time"] < $this->_control_request_timeout)
-            {
-                $control[$control_key]["count"] ++;
+                $control["count"] ++;
             } else
             {
-                $control[$control_key]["count"] = 1;
+                $control["count"] = 1;
             }
         } else
         {
-            $control[$control_key]["count"] = 1;
+            $control = array("count" => 1, "time" => $now);
         }
-        $control[$control_key]["time"] = time();
 
-        if ($control[$control_key]["count"] >= $this->_control_max_requests)
+        if ($control["count"] >= $this->_control_max_requests)
         {
             // Open lock file to inspect
             $resouce = new SplFileInfo($this->_control_lock_file);
@@ -184,13 +161,13 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
                 $file->fwrite($data, strlen($data));
                 $file->fflush();
 
-                $control[$control_key]["count"] = 0;
+                $control["count"] = 0;
             } catch (ErrorException $e)
             {
                 throw new Antiflood_Exception(__METHOD__ . ' failed to save control lock file with message : ' . $e->getMessage());
             }
         }
-        $request_count = $control[$control_key]["count"];
+        $request_count = $control["count"];
 
         // Open control db file to inspect
         $resouce = new SplFileInfo($this->_control_db);
@@ -217,68 +194,46 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
     public function garbage_collect()
     {
         $this->_load_configuration();
-        // Open control db file
-        $resource = new SplFileInfo($this->_control_db);
-
-        // If file does not exist return
-        if (!$resource->isFile())
-        {
-            return;
-        }
-
         $now = time();
-        $control = Array();
 
-        try
+        // Create new DirectoryIterator
+        $files = new DirectoryIterator($this->_control_dir);
+
+        // Iterate over each entry
+        while ($files->valid())
         {
-            $data = $resource->openFile();
-            if ($data->eof())
-            {
-                throw new Antiflood_Exception(__METHOD__ . ' corrupted control data file!');
-            }
-            $serialized_data = '';
+            // Extract the entry name
+            $name = $files->getFilename();
+            $ext = $files->getExtension();
 
-            while ($data->eof() === FALSE)
+            // If the name is not a dot
+            if ($name != '.' AND $name != '..')
             {
-                $serialized_data .= $data->fgets();
+                if ($ext === 'ser')
+                {
+                    $resource = new SplFileInfo($files->getRealPath());
+                    $control = $this->_unserialize($resource);
+                    // Check if control db is older than expiration
+                    if (isset($control["time"]) AND ( $now - $control["time"]) > $this->_expiration)
+                    {
+                        // Then delete control db
+                        $this->_delete_file($resource);
+                        
+                        // And delete control lock file if exists
+                        $without_ext = preg_replace('/\\.[^.\\s]{3,4}$/', '', $name);
+                        $lock_file = $this->_control_dir . "/" . $without_ext . ".lock";
+                        $res = new SplFileInfo($lock_file);
+                        $this->_delete_file($res);
+                    }
+                }
             }
-
-            $control = array_merge($control, unserialize($serialized_data));
-        } catch (ErrorException $e)
-        {
-            throw new Antiflood_Exception(__METHOD__ . ' failed to unserialize control data with message : ' . $e->getMessage());
+            // Move the file pointer on
+            $files->next();
         }
+        // Remove the files iterator
+        // (fixes Windows PHP which has permission issues with open iterators)
+        unset($files);
 
-        foreach ($control as $key => $value)
-        {
-            if ($now - $value['time'] > $this->_expiration)
-            {
-                unset($control[$key]);
-                $lock_file = $this->_control_dir . "/" . sha1($key . $this->_uri) . ".lock";
-                $resource = new SplFileInfo($lock_file);
-                $this->_delete_file($resource);
-            }
-        }
-
-        if (!empty($control))
-        {
-            $resouce = new SplFileInfo($this->_control_db);
-            $file = $resouce->openFile('w');
-
-            try
-            {
-                $data = serialize($control);
-                $file->fwrite($data, strlen($data));
-                $file->fflush();
-            } catch (ErrorException $e)
-            {
-                throw new Antiflood_Exception(__METHOD__ . ' failed to serialize control data with message : ' . $e->getMessage());
-            }
-        } else
-        {
-            $resouce = new SplFileInfo($this->_control_db);
-            $this->_delete_file($resouce);
-        }
         return;
     }
 
@@ -304,7 +259,6 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
      *
      * @return  void
      */
-
     public function delete_all()
     {
         $this->_load_configuration();
@@ -338,11 +292,56 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
     }
 
     /**
+     * Unserialize data from file
+     *
+     * @return  array
+     * @throws Antiflood_exception
+     */
+    protected function _unserialize(SplFileInfo $file)
+    {
+        try
+        {
+            // If file exists
+            if ($file->isFile())
+            {
+                try
+                {
+                    $data = $file->openFile();
+                    if ($data->eof())
+                    {
+                        throw new Antiflood_Exception(__METHOD__ . ' corrupted data file!');
+                    }
+                    $serialized_data = '';
+
+                    while ($data->eof() === FALSE)
+                    {
+                        $serialized_data .= $data->fgets();
+                    }
+
+                    return unserialize($serialized_data);
+                } catch (ErrorException $e)
+                {
+                    throw new Antiflood_Exception(__METHOD__ . ' failed to unserialize data with message : ' . $e->getMessage());
+                }
+            } else
+            {
+                return array();
+            }
+        }
+        // Catch all exceptions
+        catch (Exception $e)
+        {
+            // Throw exception
+            throw $e;
+        }
+    }
+
+    /**
      * Update file modification time using SplFileInfo
      *
      * @return  bool
+     * @throws Antiflood_Exception
      */
-
     protected function _update_filemtime(SplFileInfo $file)
     {
         try
@@ -365,8 +364,8 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
      * Delete file using SplFileInfo
      *
      * @return  bool
+     * @throws Antiflood_Exception
      */
-
     protected function _delete_file(SplFileInfo $file)
     {
         try
