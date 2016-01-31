@@ -15,7 +15,8 @@ defined('SYSPATH') or die('No direct script access.');
  *         'sqlite' => array(
  *             'driver' => 'sqlite',
  *             'database' => APPPATH . 'control/antiflood/kohana-antiflood.sql3',
- *             'schema' => 'CREATE TABLE controls(id integer PRIMARY KEY AUTOINCREMENT, user_ip VARCHAR(20), uri varchar(255), last_access datetime, requests INTEGER, locked INTEGER, locked_access datetime)',
+ *             'schema' => 'CREATE TABLE controls(id integer PRIMARY KEY AUTOINCREMENT, control_key varchar(255), last_access datetime, requests INTEGER, locked INTEGER, locked_access datetime)',
+ *             'control_key' => $_SERVER['REMOTE_ADDR'] . $_SERVER['REQUEST_URI'],
  *             'control_max_requests' => 3,
  *             'control_request_timeout' => 3600,
  *             'control_ban_time' => 600,

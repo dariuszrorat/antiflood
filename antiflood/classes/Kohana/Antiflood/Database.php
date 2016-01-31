@@ -9,6 +9,7 @@ abstract class Kohana_Antiflood_Database extends Antiflood implements Antiflood_
 
     protected function _load_configuration()
     {
+        $this->_control_key = Arr::get($this->_config, 'control_key', '#');
         $this->_control_max_requests = Arr::get($this->_config, 'control_max_requests', Antiflood::DEFAULT_MAX_REQUESTS);
         $this->_control_request_timeout = Arr::get($this->_config, 'control_request_timeout', Antiflood::DEFAULT_REQUEST_TIMEOUT);
         $this->_control_ban_time = Arr::get($this->_config, 'control_ban_time', Antiflood::DEFAULT_BAN_TIME);
@@ -28,11 +29,11 @@ abstract class Kohana_Antiflood_Database extends Antiflood implements Antiflood_
     public function check()
     {
         $this->_load_configuration();
-        $statement = $this->_db->prepare("SELECT locked, locked_access FROM controls WHERE (user_ip = :user_ip) AND (uri = :uri)");
+        $statement = $this->_db->prepare("SELECT locked, locked_access FROM controls WHERE control_key = :control_key");
 
         try
         {
-            $statement->execute(array(':user_ip' => $this->_user_ip, ':uri' => $this->_uri));
+            $statement->execute(array(':control_key' => $this->_control_key));
         } catch (PDOException $e)
         {
             throw new Antiflood_Exception('There was a problem querying the local SQLite3 database. :error', array(':error' => $e->getMessage()));
@@ -49,10 +50,10 @@ abstract class Kohana_Antiflood_Database extends Antiflood implements Antiflood_
                 $diff = $now - $locked_access;
                 if ($diff > $this->_control_ban_time)
                 {
-                    $statement = $this->_db->prepare("UPDATE controls SET locked_access = :locked_access, locked = 0 WHERE (user_ip = :user_ip) AND (uri = :uri)");
+                    $statement = $this->_db->prepare("UPDATE controls SET locked_access = :locked_access, locked = 0 WHERE control_key = :control_key");
                     try
                     {
-                        $statement->execute(array(':locked_access' => $now, ':user_ip' => $this->_user_ip, ':uri' => $this->_uri));
+                        $statement->execute(array(':locked_access' => $now, ':control_key' => $this->_control_key));
                     } catch (PDOException $e)
                     {
                         throw new Antiflood_Exception('There was a problem querying the local SQLite3 database. :error', array(':error' => $e->getMessage()));
@@ -61,11 +62,11 @@ abstract class Kohana_Antiflood_Database extends Antiflood implements Antiflood_
                     return true;
                 } else
                 {
-                    $statement = $this->_db->prepare("UPDATE controls SET locked_access = :locked_access WHERE (user_ip = :user_ip) AND (uri = :uri)");
+                    $statement = $this->_db->prepare("UPDATE controls SET locked_access = :locked_access WHERE control_key = :control_key");
 
                     try
                     {
-                        $statement->execute(array(':locked_access' => $now, ':user_ip' => $this->_user_ip, ':uri' => $this->_uri));
+                        $statement->execute(array(':locked_access' => $now, ':control_key' => $this->_control_key));
                     } catch (PDOException $e)
                     {
                         throw new Antiflood_Exception('There was a problem querying the local SQLite3 database. :error', array(':error' => $e->getMessage()));
@@ -93,12 +94,12 @@ abstract class Kohana_Antiflood_Database extends Antiflood implements Antiflood_
     {
         $this->_load_configuration();
         $now = time();
-        $statement = $this->_db->prepare("SELECT * FROM controls WHERE (user_ip = :user_ip) AND (uri = :uri)");
+        $statement = $this->_db->prepare("SELECT * FROM controls WHERE control_key = :control_key");
         $request_count = 0;
 
         try
         {
-            $statement->execute(array(':user_ip' => $this->_user_ip, ':uri' => $this->_uri));
+            $statement->execute(array(':control_key' => $this->_control_key));
         } catch (PDOException $e)
         {
             throw new Antiflood_Exception('There was a problem querying the local SQLite3 database. :error', array(':error' => $e->getMessage()));
@@ -106,15 +107,16 @@ abstract class Kohana_Antiflood_Database extends Antiflood implements Antiflood_
 
         if (!$result = $statement->fetch(PDO::FETCH_OBJ))
         {
-            $statement = $this->_db->prepare("INSERT INTO controls (user_ip, uri, last_access, requests, locked, locked_access) VALUES (:user_ip, :uri, :last_access, 1, 0, :last_access)");
+            $statement = $this->_db->prepare("INSERT INTO controls (control_key, last_access, requests, locked, locked_access) VALUES (:control_key, :last_access, 1, 0, :last_access)");
 
             try
             {
-                $statement->execute(array(':user_ip' => $this->_user_ip, ':uri' => $this->_uri, ':last_access' => $now));
+                $statement->execute(array(':control_key' => $this->_control_key, ':last_access' => $now));
             } catch (PDOException $e)
             {
                 throw new Antiflood_Exception('There was a problem querying the local SQLite3 database. :error', array(':error' => $e->getMessage()));
             }
+            $request_count = 1;
         } else
         {
             $requests = $result->requests;
@@ -139,11 +141,11 @@ abstract class Kohana_Antiflood_Database extends Antiflood implements Antiflood_
             }
 
             $request_count = $requests;
-            $statement = $this->_db->prepare("UPDATE controls SET last_access = :last_access, requests = :requests, locked = :locked, locked_access = :locked_access WHERE (user_ip = :user_ip) AND (uri = :uri)");
+            $statement = $this->_db->prepare("UPDATE controls SET last_access = :last_access, requests = :requests, locked = :locked, locked_access = :locked_access WHERE control_key = :control_key");
 
             try
             {
-                $statement->execute(array(':last_access' => $last_access, ':requests' => $requests, ':locked' => $locked, ':locked_access' => $locked_access, ':user_ip' => $this->_user_ip, ':uri' => $this->_uri));
+                $statement->execute(array(':last_access' => $last_access, ':requests' => $requests, ':locked' => $locked, ':locked_access' => $locked_access, ':control_key' => $this->_control_key));
             } catch (PDOException $e)
             {
                 throw new Antiflood_Exception('There was a problem querying the local SQLite3 database. :error', array(':error' => $e->getMessage()));
@@ -163,11 +165,11 @@ abstract class Kohana_Antiflood_Database extends Antiflood implements Antiflood_
         $this->_load_configuration();
         $now = time();
         $old_date = $now - $this->_expiration;
-        $statement = $this->_db->prepare("DELETE FROM controls WHERE (last_access < :old_date) AND (uri = :uri)");
+        $statement = $this->_db->prepare("DELETE FROM controls WHERE last_access < :old_date");
 
         try
         {
-            $statement->execute(array(':old_date' => $old_date, ':uri' => $this->_uri));
+            $statement->execute(array(':old_date' => $old_date));
         } catch (PDOException $e)
         {
             throw new Antiflood_Exception('There was a problem querying the local SQLite3 database. :error', array(':error' => $e->getMessage()));
@@ -183,11 +185,11 @@ abstract class Kohana_Antiflood_Database extends Antiflood implements Antiflood_
      */
     public function delete()
     {
-        $statement = $this->_db->prepare("DELETE FROM controls WHERE (user_ip = :user_ip) AND (uri = :uri)");
+        $statement = $this->_db->prepare("DELETE FROM controls WHERE control_key = :control_key");
 
         try
         {
-            $statement->execute(array(':user_ip' => $this->_user_ip, ':uri' => $this->_uri));
+            $statement->execute(array(':control_key' => $this->_control_key));
         } catch (PDOException $e)
         {
             throw new Antiflood_Exception('There was a problem querying the local SQLite3 database. :error', array(':error' => $e->getMessage()));

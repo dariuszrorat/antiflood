@@ -22,14 +22,14 @@ defined('SYSPATH') or die('No direct script access.');
  *                'CREATE TABLE controls' .
  *                '(' .
  *                '  id serial NOT NULL,' .
- *                '  user_ip character varying(20) NOT NULL,' .
- *                '  uri character varying(255) NOT NULL,' .
+ *                '  control_key character varying(255) NOT NULL,' .
  *                '  last_access bigint NOT NULL,' .
  *                '  requests integer NOT NULL,' .
  *                '  locked integer NOT NULL,' .
  *                '  locked_access bigint NOT NULL,' .
  *                '  CONSTRAINT pk_controls PRIMARY KEY (id)' .
  *                ')',
+ *                'control_key' => $_SERVER['REMOTE_ADDR'] . $_SERVER['REQUEST_URI'],
  *                'control_max_requests' => 3,
  *                'control_request_timeout' => 3600,
  *                'control_ban_time' => 600,

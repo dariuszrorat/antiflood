@@ -16,6 +16,7 @@ defined('SYSPATH') or die('No direct script access.');
  *          'file'   => array(                          // File driver group
  *                  'driver'         => 'file',         // using File driver
  *                  'control_dir'     => APPPATH.'control/antiflood', // Control location
+ *                  'control_key' => $_SERVER['REMOTE_ADDR'] . $_SERVER['REQUEST_URI'],
  *                  'control_max_requests'    => 5,
  *                  'control_request_timeout' => 3600,
  *                  'control_ban_time'        => 600,
@@ -76,6 +77,7 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
     protected function _load_configuration()
     {
         $this->_control_dir = Arr::get($this->_config, 'control_dir', APPPATH . 'control/antiflood');
+        $this->_control_key = Arr::get($this->_config, 'control_key', '#');
         $this->_control_max_requests = Arr::get($this->_config, 'control_max_requests', Antiflood::DEFAULT_MAX_REQUESTS);
         $this->_control_request_timeout = Arr::get($this->_config, 'control_request_timeout', Antiflood::DEFAULT_REQUEST_TIMEOUT);
         $this->_control_ban_time = Arr::get($this->_config, 'control_ban_time', Antiflood::DEFAULT_BAN_TIME);
@@ -86,8 +88,8 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
             $this->_expiration = $this->_control_ban_time;
         }
 
-        $this->_control_db = $this->_control_dir . "/" . sha1($this->_user_ip . $this->_uri) . ".ser";
-        $this->_control_lock_file = $this->_control_dir . "/" . sha1($this->_user_ip . $this->_uri) . ".lock";
+        $this->_control_db = $this->_control_dir . "/" . sha1($this->_control_key) . ".ser";
+        $this->_control_lock_file = $this->_control_dir . "/" . sha1($this->_control_key) . ".lock";
     }
 
     /**
@@ -157,7 +159,7 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
 
             try
             {
-                $data = $this->_user_ip . "\n" . $this->_uri;
+                $data = $this->_control_key;
                 $file->fwrite($data, strlen($data));
                 $file->fflush();
 

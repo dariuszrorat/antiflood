@@ -21,14 +21,14 @@ defined('SYSPATH') or die('No direct script access.');
  *                'schema' =>
  *                'CREATE TABLE controls (' .
  *                'id int(10) unsigned NOT NULL AUTO_INCREMENT,' .
- *                'user_ip varchar(20) NOT NULL,' .
- *                'uri varchar(255) NOT NULL,' .
+ *                'control_key varchar(255) NOT NULL,' .
  *                'last_access INT(11) NOT NULL,' .
  *                'requests int(10) unsigned NOT NULL,' .
  *                'locked tinyint(1) NOT NULL,' .
  *                'locked_access INT(11) NOT NULL,' .
  *                'PRIMARY KEY (id)' .
  *                ') ENGINE=InnoDB DEFAULT CHARSET=utf8;',
+ *                'control_key' => $_SERVER['REMOTE_ADDR'] . $_SERVER['REQUEST_URI'], 
  *                'control_max_requests' => 3,
  *                'control_request_timeout' => 3600,
  *                'control_ban_time' => 20,

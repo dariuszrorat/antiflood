@@ -13,6 +13,7 @@ defined('SYSPATH') or die('No direct script access.');
  *     return array(
  *         'memcache' => array(
  *             'driver' => 'memcache',
+ *             'control_key' => $_SERVER['REMOTE_ADDR'] . $_SERVER['REQUEST_URI'],
  *             'control_max_requests' => 3,
  *             'control_request_timeout' => 3600,
  *             'control_ban_time' => 600,
@@ -148,12 +149,13 @@ class Kohana_Antiflood_Memcache extends Antiflood
 
     protected function _load_configuration()
     {
+        $this->_control_key = Arr::get($this->_config, 'control_key', '#');
         $this->_control_max_requests = Arr::get($this->_config, 'control_max_requests', Antiflood::DEFAULT_MAX_REQUESTS);
         $this->_control_request_timeout = Arr::get($this->_config, 'control_request_timeout', Antiflood::DEFAULT_REQUEST_TIMEOUT);
         $this->_control_ban_time = Arr::get($this->_config, 'control_ban_time', Antiflood::DEFAULT_BAN_TIME);
 
-        $this->_control_db_key = 'db_' . sha1($this->_user_ip . $this->_uri);
-        $this->_control_lock_key = 'lock_' . sha1($this->_user_ip . $this->_uri);
+        $this->_control_db_key = 'db_' . sha1($this->_control_key);
+        $this->_control_lock_key = 'lock_' . sha1($this->_control_key);
     }
 
     /**
@@ -195,8 +197,7 @@ class Kohana_Antiflood_Memcache extends Antiflood
     public function count_requests()
     {
         $this->_load_configuration();
-        $control = null;
-        $control_key = $this->_user_ip;
+        $control = null;        
         $request_count = 0;
 
         $serialized = $this->_memcache->get($this->_control_db_key);
@@ -222,8 +223,7 @@ class Kohana_Antiflood_Memcache extends Antiflood
         {
             $this->_memcache->set($this->_control_lock_key, serialize(
                             array(
-                                'ip' => $this->_user_ip,
-                                'uri' => $this->_uri,
+                                'key' => $this->_control_key,                                
                                 'time' => $now)), $this->_flags, Antiflood_Memcache::MAX_LIFE
             );
             $control["count"] = 0;

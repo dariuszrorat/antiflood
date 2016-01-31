@@ -30,6 +30,7 @@
  *     return array(
  *            'file' => array(
  *                   'driver' => 'file',
+ *                   'control_key' => $_SERVER['REMOTE_ADDR'] . $_SERVER['REQUEST_URI'],
  *                   'control_dir' => APPPATH . 'control/antiflood',
  *                   'control_max_requests' => 3,
  *                   'control_request_timeout' => 3600,
@@ -44,8 +45,9 @@
  * Below are the settings available to all types of antiflood driver.
  *
  * Name                      | Required | Description
- * --------------            | -------- | ---------------------------------------------------------------
+ * ------------------------- | -------- | ---------------------------------------------------------------
  * driver                    | __YES__  | (_string_) The driver type to use
+ * control_key               | __YES__  | (_string_) The control key used to check (IP or anything)
  * control_max_requests      | __YES__  | (_integer_) The maximum of requests in control request timeout
  * control_request_timeout   | __YES__  | (_integer_) The control request timeout in s
  * control_ban_time          | __YES__  | (_integer_) The user IP ban time in s
@@ -84,8 +86,11 @@ abstract class Kohana_Antiflood {
 	 */
         protected $_expiration;
 
-        protected $_user_ip;
-        protected $_uri;
+        /**
+	 * @var   string control key
+	 */
+
+        protected $_control_key;
 
 	/**
 	 * @var   string     default driver to use
@@ -155,9 +160,7 @@ abstract class Kohana_Antiflood {
 	 */
 	protected function __construct(array $config)
 	{
-		$this->config($config);
-                $this->_user_ip = $_SERVER["REMOTE_ADDR"];
-                $this->_uri = $_SERVER['REQUEST_URI'];
+		$this->config($config);                
 	}
 
 	/**

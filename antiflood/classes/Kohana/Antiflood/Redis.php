@@ -13,6 +13,7 @@ defined('SYSPATH') or die('No direct script access.');
  *     return array(
  *          'redis'   => array(                          // File driver group
  *                  'driver'         => 'redis',         // using Redis driver
+ *                  'control_key' => $_SERVER['REMOTE_ADDR'] . $_SERVER['REQUEST_URI'],
  *                  'control_max_requests'    => 5,
  *                  'control_request_timeout' => 3600,
  *                  'control_ban_time'        => 600,
@@ -87,6 +88,7 @@ class Kohana_Antiflood_Redis extends Antiflood
 
     protected function _load_configuration()
     {
+        $this->_control_key = Arr::get($this->_config, 'control_key', '#');
         $this->_control_max_requests = Arr::get($this->_config, 'control_max_requests', Antiflood::DEFAULT_MAX_REQUESTS);
         $this->_control_request_timeout = Arr::get($this->_config, 'control_request_timeout', Antiflood::DEFAULT_REQUEST_TIMEOUT);
         $this->_control_ban_time = Arr::get($this->_config, 'control_ban_time', Antiflood::DEFAULT_BAN_TIME);
@@ -133,10 +135,8 @@ class Kohana_Antiflood_Redis extends Antiflood
     public function count_requests()
     {
         $this->_load_configuration();
-        $control = null;
-        $control_key = $this->_user_ip;
+        $control = null;        
         $request_count = 0;
-
 
         $serialized = $this->_client->get($this->_control_db_key);
         $control = ($serialized !== null) ? unserialize($serialized) : null;
@@ -161,8 +161,7 @@ class Kohana_Antiflood_Redis extends Antiflood
         {
             $this->_client->set($this->_control_lock_key, serialize(
                             array(
-                                'ip' => $this->_user_ip,
-                                'uri' => $this->_uri,
+                                'key' => $this->_control_key,
                                 'time' => $now)));
             $control["count"] = 0;
         }

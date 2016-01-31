@@ -6,18 +6,20 @@ return array(
     'file' => array(
         'driver' => 'file',
         'control_dir' => APPPATH . 'control/antiflood',
+        'control_key' => $_SERVER['REMOTE_ADDR'] . $_SERVER['REQUEST_URI'],
         'control_max_requests' => 3,
         'control_request_timeout' => 3600,
-        'control_ban_time' => 600,
+        'control_ban_time' => 20,
         'expiration' => 172800
     ),
     'sqlite' => array(
         'driver' => 'sqlite',
         'database' => APPPATH . 'control/antiflood/kohana-antiflood.sql3',
-        'schema' => 'CREATE TABLE controls(id integer PRIMARY KEY AUTOINCREMENT, user_ip VARCHAR(20), uri varchar(255), last_access datetime, requests INTEGER, locked INTEGER, locked_access datetime)',
+        'schema' => 'CREATE TABLE controls(id integer PRIMARY KEY AUTOINCREMENT, control_key varchar(255), last_access datetime, requests INTEGER, locked INTEGER, locked_access datetime)',
+        'control_key' => $_SERVER['REMOTE_ADDR'] . $_SERVER['REQUEST_URI'],
         'control_max_requests' => 3,
         'control_request_timeout' => 3600,
-        'control_ban_time' => 600,
+        'control_ban_time' => 20,
         'expiration' => 172800
     ),
     'mysql' => array(
@@ -29,14 +31,14 @@ return array(
         'schema' =>
         'CREATE TABLE controls (' .
         'id int(10) unsigned NOT NULL AUTO_INCREMENT,' .
-        'user_ip varchar(20) NOT NULL,' .
-        'uri varchar(255) NOT NULL,' .
+        'control_key varchar(255) NOT NULL,' .
         'last_access INT(11) NOT NULL,' .
         'requests int(10) unsigned NOT NULL,' .
         'locked tinyint(1) NOT NULL,' .
         'locked_access INT(11) NOT NULL,' .
         'PRIMARY KEY (id)' .
         ') ENGINE=InnoDB DEFAULT CHARSET=utf8;',
+        'control_key' => $_SERVER['REMOTE_ADDR'] . $_SERVER['REQUEST_URI'],
         'control_max_requests' => 3,
         'control_request_timeout' => 3600,
         'control_ban_time' => 20,
@@ -52,14 +54,14 @@ return array(
         'CREATE TABLE controls' .
         '(' .
         '  id serial NOT NULL,' .
-        '  user_ip character varying(20) NOT NULL,' .
-        '  uri character varying(255) NOT NULL,' .
+        '  control_key character varying(255) NOT NULL,' .
         '  last_access bigint NOT NULL,' .
         '  requests integer NOT NULL,' .
         '  locked integer NOT NULL,' .
         '  locked_access bigint NOT NULL,' .
         '  CONSTRAINT pk_controls PRIMARY KEY (id)' .
         ')',
+        'control_key' => $_SERVER['REMOTE_ADDR'] . $_SERVER['REQUEST_URI'],
         'control_max_requests' => 3,
         'control_request_timeout' => 3600,
         'control_ban_time' => 600,
@@ -67,6 +69,7 @@ return array(
     ),
     'redis' => array(
         'driver' => 'redis',
+        'control_key' => $_SERVER['REMOTE_ADDR'] . $_SERVER['REQUEST_URI'],
         'control_max_requests' => 3,
         'control_request_timeout' => 3600,
         'control_ban_time' => 600,
@@ -76,6 +79,7 @@ return array(
     ),
     'memcache' => array(
         'driver' => 'memcache',
+        'control_key' => $_SERVER['REMOTE_ADDR'] . $_SERVER['REQUEST_URI'],
         'control_max_requests' => 3,
         'control_request_timeout' => 3600,
         'control_ban_time' => 600,
