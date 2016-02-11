@@ -53,10 +53,13 @@ application/vendor/predis
 
 This library is internal included included by:
 
-```php
-require_once Kohana::find_file('vendor/predis', 'autoload');
-```
 No need to install Redis PHP extension module.
+
+The SSDB nosql driver uses SSDB PHP library
+
+http://ssdb.io
+
+Install php SSDB class in vendor/SSDB
 
 ## Example usage:
 
@@ -198,6 +201,16 @@ return array(
         'host' => '127.0.0.1',
         'port' => 6379,
         'database' => 15
+    ),
+    'ssdb' => array(
+        'driver' => 'SSDB',
+        'control_key' => $_SERVER['REMOTE_ADDR'] . $_SERVER['REQUEST_URI'],
+        'control_max_requests' => 3,
+        'control_request_timeout' => 3600,
+        'control_ban_time' => 600,
+        'host' => '127.0.0.1',
+        'port' => 8888,
+        'timeout' => 2000
     ),
     'memcache' => array(
         'driver' => 'memcache',

@@ -243,6 +243,7 @@ class Kohana_Antiflood_Memcache extends Antiflood
 
     public function delete($timeout = 0)
     {
+        $this->_load_configuration();
         $this->_memcache->delete($this->_control_db_key, $timeout);
         $this->_memcache->delete($this->_control_lock_key, $timeout);
         return;

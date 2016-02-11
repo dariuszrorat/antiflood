@@ -185,6 +185,7 @@ abstract class Kohana_Antiflood_Database extends Antiflood implements Antiflood_
      */
     public function delete()
     {
+        $this->_load_configuration();
         $statement = $this->_db->prepare("DELETE FROM controls WHERE control_key = :control_key");
 
         try
