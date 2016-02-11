@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>Antiflood by dariuszrorat</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+  </head>
+  <body>
+    <section class="page-header">
+      <h1 class="project-name">Antiflood</h1>
+      <h2 class="project-tagline">Kohana module for anti flood protection</h2>
+      <a href="https://github.com/dariuszrorat/antiflood" class="btn">View on GitHub</a>
+      <a href="https://github.com/dariuszrorat/antiflood/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/dariuszrorat/antiflood/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
+
+    <section class="main-content">
+      <h1>
+<a id="antiflood-module-for-kohana-framework" class="anchor" href="#antiflood-module-for-kohana-framework" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Antiflood module for Kohana Framework</h1>
+
+<p>This module can be used to protect Your application against too many requests.
+It can not protect against DDoS attacks.</p>
+
+<p>This is a derivative work based on:</p>
+
+<p><a href="https://github.com/damog/planetalinux/blob/master/www/principal/suscripcion/lib/antiflood.hack.php">https://github.com/damog/planetalinux/blob/master/www/principal/suscripcion/lib/antiflood.hack.php</a></p>
+
+<h2>
+<a id="information" class="anchor" href="#information" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Information</h2>
+
+<p>Your project have following structure if You use default file driver</p>
+
+<pre><code> application
+   control
+     antiflood
+ modules
+   antiflood
+ system
+ index.php
+</code></pre>
+
+<p>You must create antiflood control dir from Your antiflood config file. Default
+is: application/control/antiflood. You can use the same control dir for the
+different request URI.</p>
+
+<h2>
+<a id="additional-information" class="anchor" href="#additional-information" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Additional information</h2>
+
+<p>You must set DOCROOT in Your index.php</p>
+
+<p><code>define('DOCROOT', realpath(dirname(__FILE__)).DIRECTORY_SEPARATOR);</code></p>
+
+<p>Add:</p>
+
+<p><code>'antiflood' =&gt; MODPATH . 'antiflood'</code></p>
+
+<p>to Your bootstrap.php</p>
+
+<h2>
+<a id="requirements" class="anchor" href="#requirements" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Requirements</h2>
+
+<p>The redis driver requires predis library:
+<a href="https://github.com/nrk/predis">https://github.com/nrk/predis</a></p>
+
+<p>Install this library on:</p>
+
+<p>application/vendor</p>
+
+<p>autoload.php must be in:</p>
+
+<p>application/vendor/predis</p>
+
+<p>This library is internal included included by:</p>
+
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-k">require_once</span> <span class="pl-c1">Kohana</span><span class="pl-k">::</span>find_file(<span class="pl-s"><span class="pl-pds">'</span>vendor/predis<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>autoload<span class="pl-pds">'</span></span>);</span></pre></div>
+
+<p>No need to install Redis PHP extension module.</p>
+
+<h2>
+<a id="example-usage" class="anchor" href="#example-usage" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Example usage:</h2>
+
+<p>Using default file driver:</p>
+
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1"> <span class="pl-smi">$antiflood</span> <span class="pl-k">=</span> <span class="pl-c1">Antiflood</span><span class="pl-k">::</span>instance();</span>
+<span class="pl-s1"> <span class="pl-k">if</span> (<span class="pl-smi">$antiflood</span><span class="pl-k">-&gt;</span>check())</span>
+<span class="pl-s1"> {</span>
+<span class="pl-s1">     <span class="pl-smi">$antiflood</span><span class="pl-k">-&gt;</span>count_requests();</span>
+<span class="pl-s1">     <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span><span class="pl-smi">template</span> <span class="pl-k">=</span> <span class="pl-c1">View</span><span class="pl-k">::</span>factory(<span class="pl-s"><span class="pl-pds">'</span>welcome/index<span class="pl-pds">'</span></span>);</span>
+<span class="pl-s1"> }</span>
+<span class="pl-s1"> <span class="pl-k">else</span></span>
+<span class="pl-s1"> {</span>
+<span class="pl-s1">     <span class="pl-c1">header</span>(<span class="pl-s"><span class="pl-pds">'</span>HTTP/1.1 503 Service Unavailable<span class="pl-pds">'</span></span>);</span>
+<span class="pl-s1">     <span class="pl-k">die</span>();</span>
+<span class="pl-s1"> }</span>
+<span class="pl-s1"></span></pre></div>
+
+<p>Using sqlite driver:</p>
+
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1"> <span class="pl-smi">$antiflood</span> <span class="pl-k">=</span> <span class="pl-c1">Antiflood</span><span class="pl-k">::</span>instance(<span class="pl-s"><span class="pl-pds">'</span>sqlite<span class="pl-pds">'</span></span>);</span>
+<span class="pl-s1"> <span class="pl-k">if</span> (<span class="pl-smi">$antiflood</span><span class="pl-k">-&gt;</span>check())</span>
+<span class="pl-s1"> {</span>
+<span class="pl-s1">     <span class="pl-smi">$antiflood</span><span class="pl-k">-&gt;</span>count_requests();</span>
+<span class="pl-s1">     <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span><span class="pl-smi">template</span> <span class="pl-k">=</span> <span class="pl-c1">View</span><span class="pl-k">::</span>factory(<span class="pl-s"><span class="pl-pds">'</span>welcome/index<span class="pl-pds">'</span></span>);</span>
+<span class="pl-s1"> }</span>
+<span class="pl-s1"> <span class="pl-k">else</span></span>
+<span class="pl-s1"> {</span>
+<span class="pl-s1">     <span class="pl-c1">header</span>(<span class="pl-s"><span class="pl-pds">'</span>HTTP/1.1 503 Service Unavailable<span class="pl-pds">'</span></span>);</span>
+<span class="pl-s1">     <span class="pl-k">die</span>();</span>
+<span class="pl-s1"> }</span>
+<span class="pl-s1"></span></pre></div>
+
+<h2>
+<a id="probablistic-garbage-collection" class="anchor" href="#probablistic-garbage-collection" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Probablistic garbage collection</h2>
+
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-smi">$antiflood</span> <span class="pl-k">=</span> <span class="pl-c1">Antiflood</span><span class="pl-k">::</span>instance();</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-c">// Set a GC probability of 10%</span></span>
+<span class="pl-s1"><span class="pl-smi">$gc</span> <span class="pl-k">=</span> <span class="pl-c1">10</span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-c">// If the GC probability is a hit</span></span>
+<span class="pl-s1"><span class="pl-k">if</span> (<span class="pl-c1">rand</span>(<span class="pl-c1">0</span>, <span class="pl-c1">99</span>) <span class="pl-k">&lt;</span> <span class="pl-smi">$gc</span> <span class="pl-k">and</span> <span class="pl-smi">$antiflood</span> <span class="pl-k">instanceof</span> <span class="pl-c1">Antiflood_GarbageCollect</span>)</span>
+<span class="pl-s1">{</span>
+<span class="pl-s1">    <span class="pl-c">// Garbage Collect</span></span>
+<span class="pl-s1">    <span class="pl-smi">$antiflood</span><span class="pl-k">-&gt;</span>garbage_collect();</span>
+<span class="pl-s1">}</span></pre></div>
+
+<p>The garbage collector uses expiration config value to delete old and not used
+records.</p>
+
+<h2>
+<a id="config" class="anchor" href="#config" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Config</h2>
+
+<p>antiflood.php</p>
+
+<div class="highlight highlight-text-html-php"><pre><span class="pl-pse">&lt;?php</span><span class="pl-s1"></span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-c1">defined</span>(<span class="pl-s"><span class="pl-pds">'</span>SYSPATH<span class="pl-pds">'</span></span>) <span class="pl-k">or</span> <span class="pl-k">die</span>(<span class="pl-s"><span class="pl-pds">'</span>No direct script access.<span class="pl-pds">'</span></span>);</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">return</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>file<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>driver<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>file<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>control_dir<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">APPPATH</span> <span class="pl-k">.</span> <span class="pl-s"><span class="pl-pds">'</span>control/antiflood<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>control_key<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-smi">$_SERVER</span>[<span class="pl-s"><span class="pl-pds">'</span>REMOTE_ADDR<span class="pl-pds">'</span></span>] <span class="pl-k">.</span> <span class="pl-smi">$_SERVER</span>[<span class="pl-s"><span class="pl-pds">'</span>REQUEST_URI<span class="pl-pds">'</span></span>],</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>control_max_requests<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">3</span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>control_request_timeout<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">3600</span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>control_ban_time<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">20</span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>expiration<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">172800</span></span>
+<span class="pl-s1">    ),</span>
+<span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>sqlite<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>driver<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>sqlite<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>database<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">APPPATH</span> <span class="pl-k">.</span> <span class="pl-s"><span class="pl-pds">'</span>control/antiflood/kohana-antiflood.sql3<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>schema<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span><span class="pl-s1">CREATE TABLE controls(id <span class="pl-k">integer</span> <span class="pl-k">PRIMARY KEY</span> AUTOINCREMENT, control_key <span class="pl-k">varchar</span>(<span class="pl-c1">255</span>), last_access datetime, requests <span class="pl-k">INTEGER</span>, locked <span class="pl-k">INTEGER</span>, locked_access datetime)</span><span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>control_key<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-smi">$_SERVER</span>[<span class="pl-s"><span class="pl-pds">'</span>REMOTE_ADDR<span class="pl-pds">'</span></span>] <span class="pl-k">.</span> <span class="pl-smi">$_SERVER</span>[<span class="pl-s"><span class="pl-pds">'</span>REQUEST_URI<span class="pl-pds">'</span></span>],</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>control_max_requests<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">3</span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>control_request_timeout<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">3600</span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>control_ban_time<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">20</span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>expiration<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">172800</span></span>
+<span class="pl-s1">    ),</span>
+<span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>mysql<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>driver<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>mysql<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>hostname<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>localhost<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>database<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>mojastrona<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>username<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>root<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>password<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>root<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>schema<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span></span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span><span class="pl-s1">CREATE TABLE controls (</span><span class="pl-pds">'</span></span> <span class="pl-k">.</span></span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>id int(10) unsigned NOT NULL AUTO_INCREMENT,<span class="pl-pds">'</span></span> <span class="pl-k">.</span></span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>control_key varchar(255) NOT NULL,<span class="pl-pds">'</span></span> <span class="pl-k">.</span></span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>last_access INT(11) NOT NULL,<span class="pl-pds">'</span></span> <span class="pl-k">.</span></span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>requests int(10) unsigned NOT NULL,<span class="pl-pds">'</span></span> <span class="pl-k">.</span></span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>locked tinyint(1) NOT NULL,<span class="pl-pds">'</span></span> <span class="pl-k">.</span></span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>locked_access INT(11) NOT NULL,<span class="pl-pds">'</span></span> <span class="pl-k">.</span></span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>PRIMARY KEY (id)<span class="pl-pds">'</span></span> <span class="pl-k">.</span></span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>) ENGINE=InnoDB DEFAULT CHARSET=utf8;<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>control_key<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-smi">$_SERVER</span>[<span class="pl-s"><span class="pl-pds">'</span>REMOTE_ADDR<span class="pl-pds">'</span></span>] <span class="pl-k">.</span> <span class="pl-smi">$_SERVER</span>[<span class="pl-s"><span class="pl-pds">'</span>REQUEST_URI<span class="pl-pds">'</span></span>],</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>control_max_requests<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">3</span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>control_request_timeout<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">3600</span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>control_ban_time<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">20</span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>expiration<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">172800</span></span>
+<span class="pl-s1">    ),</span>
+<span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>postgresql<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>driver<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>postgresql<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>hostname<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>localhost<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>database<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>finance<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>username<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>postgres<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>password<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>postgres<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>schema<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span></span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span><span class="pl-s1">CREATE TABLE controls</span><span class="pl-pds">'</span></span> <span class="pl-k">.</span></span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>(<span class="pl-pds">'</span></span> <span class="pl-k">.</span></span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>  id serial NOT NULL,<span class="pl-pds">'</span></span> <span class="pl-k">.</span></span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>  control_key character varying(255) NOT NULL,<span class="pl-pds">'</span></span> <span class="pl-k">.</span></span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>  last_access bigint NOT NULL,<span class="pl-pds">'</span></span> <span class="pl-k">.</span></span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>  requests integer NOT NULL,<span class="pl-pds">'</span></span> <span class="pl-k">.</span></span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>  locked integer NOT NULL,<span class="pl-pds">'</span></span> <span class="pl-k">.</span></span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>  locked_access bigint NOT NULL,<span class="pl-pds">'</span></span> <span class="pl-k">.</span></span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>  CONSTRAINT pk_controls PRIMARY KEY (id)<span class="pl-pds">'</span></span> <span class="pl-k">.</span></span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>)<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>control_key<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-smi">$_SERVER</span>[<span class="pl-s"><span class="pl-pds">'</span>REMOTE_ADDR<span class="pl-pds">'</span></span>] <span class="pl-k">.</span> <span class="pl-smi">$_SERVER</span>[<span class="pl-s"><span class="pl-pds">'</span>REQUEST_URI<span class="pl-pds">'</span></span>],</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>control_max_requests<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">3</span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>control_request_timeout<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">3600</span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>control_ban_time<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">600</span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>expiration<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">172800</span></span>
+<span class="pl-s1">    ),</span>
+<span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>redis<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>driver<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>redis<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>control_key<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-smi">$_SERVER</span>[<span class="pl-s"><span class="pl-pds">'</span>REMOTE_ADDR<span class="pl-pds">'</span></span>] <span class="pl-k">.</span> <span class="pl-smi">$_SERVER</span>[<span class="pl-s"><span class="pl-pds">'</span>REQUEST_URI<span class="pl-pds">'</span></span>],</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>control_max_requests<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">3</span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>control_request_timeout<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">3600</span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>control_ban_time<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">600</span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>host<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>127.0.0.1<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>port<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">6379</span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>database<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">15</span></span>
+<span class="pl-s1">    ),</span>
+<span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>memcache<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>driver<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>memcache<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>control_key<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-smi">$_SERVER</span>[<span class="pl-s"><span class="pl-pds">'</span>REMOTE_ADDR<span class="pl-pds">'</span></span>] <span class="pl-k">.</span> <span class="pl-smi">$_SERVER</span>[<span class="pl-s"><span class="pl-pds">'</span>REQUEST_URI<span class="pl-pds">'</span></span>],</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>control_max_requests<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">3</span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>control_request_timeout<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">3600</span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>control_ban_time<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">600</span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>compression<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">FALSE</span>, <span class="pl-c">// Use Zlib compression (can cause issues with integers)</span></span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>servers<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">            <span class="pl-s"><span class="pl-pds">'</span>local<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">                <span class="pl-s"><span class="pl-pds">'</span>host<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>localhost<span class="pl-pds">'</span></span>, <span class="pl-c">// Memcache Server</span></span>
+<span class="pl-s1">                <span class="pl-s"><span class="pl-pds">'</span>port<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">11211</span>, <span class="pl-c">// Memcache port number</span></span>
+<span class="pl-s1">                <span class="pl-s"><span class="pl-pds">'</span>persistent<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">FALSE</span>, <span class="pl-c">// Persistent connection</span></span>
+<span class="pl-s1">                <span class="pl-s"><span class="pl-pds">'</span>weight<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">1</span>,</span>
+<span class="pl-s1">                <span class="pl-s"><span class="pl-pds">'</span>timeout<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">1</span>,</span>
+<span class="pl-s1">                <span class="pl-s"><span class="pl-pds">'</span>retry_interval<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">15</span>,</span>
+<span class="pl-s1">                <span class="pl-s"><span class="pl-pds">'</span>status<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">TRUE</span></span>
+<span class="pl-s1">            ),</span>
+<span class="pl-s1">        ),</span>
+<span class="pl-s1">        <span class="pl-c">// Take server offline immediately on first fail (no retry)</span></span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>instant_death<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">TRUE</span></span>
+<span class="pl-s1">    )</span>
+<span class="pl-s1">);</span>
+<span class="pl-s1"></span></pre></div>
+
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/dariuszrorat/antiflood">Antiflood</a> is maintained by <a href="https://github.com/dariuszrorat">dariuszrorat</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+      </footer>
+
+    </section>
+
+  
+  </body>
+</html>
