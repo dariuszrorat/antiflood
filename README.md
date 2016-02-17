@@ -123,10 +123,6 @@ records.
 antiflood.php
 
 ```php
-<?php
-
-defined('SYSPATH') or die('No direct script access.');
-
 return array(
     'file' => array(
         'driver' => 'file',
@@ -232,7 +228,20 @@ return array(
         ),
         // Take server offline immediately on first fail (no retry)
         'instant_death' => TRUE
-    )
+    ),
+    'mongo' => array(
+        'driver' => 'mongo',
+        'control_key' => $_SERVER['REMOTE_ADDR'] . $_SERVER['REQUEST_URI'],
+        'control_max_requests' => 3,
+        'control_request_timeout' => 3600,
+        'control_ban_time' => 600,
+        'expiration' => 172800,
+        'host' => 'localhost',
+        'port' => 27017,
+        'database' => 'control',
+        'collection' => 'antiflood'
+    ),
+
 );
 
 ```
