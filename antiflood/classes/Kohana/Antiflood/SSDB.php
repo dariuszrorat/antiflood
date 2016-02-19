@@ -11,8 +11,8 @@ defined('SYSPATH') or die('No direct script access.');
  * Below is an example of a _file_ server configuration.
  *
  *     return array(
- *          'ssdb'   => array(                          // File driver group
- *                  'driver'         => 'SSDB',         // using Redis driver (must be uppercase in Kohana 3.3+)
+ *          'ssdb'   => array(                          // SSDB driver group
+ *                  'driver'         => 'SSDB',         // using SSDB driver (must be uppercase in Kohana 3.3+)
  *                  'control_key' => $_SERVER['REMOTE_ADDR'] . $_SERVER['REQUEST_URI'],
  *                  'control_max_requests'    => 5,
  *                  'control_request_timeout' => 3600,

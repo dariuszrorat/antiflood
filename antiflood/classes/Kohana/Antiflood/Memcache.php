@@ -90,7 +90,7 @@ class Kohana_Antiflood_Memcache extends Antiflood
     protected $_default_config = array();
 
     /**
-     * Constructs the redis antiflood driver. This method cannot be invoked externally. The redis antiflood driver must
+     * Constructs the memcache antiflood driver. This method cannot be invoked externally. The memcache antiflood driver must
      * be instantiated using the `Antiflood::instance()` method.
      *
      * @param   array  $config  config
