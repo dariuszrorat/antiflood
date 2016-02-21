@@ -10,7 +10,13 @@ return array(
         'control_max_requests' => 3,
         'control_request_timeout' => 3600,
         'control_ban_time' => 20,
-        'expiration' => 172800
+        'expiration' => 172800,
+	'ignore_on_delete' => array(
+	    '.gitignore',
+	    '.git',
+	    '.svn',
+            'antiflood' // ignore control_dir delete
+	)
     ),
     'sqlite' => array(
         'driver' => 'sqlite',

@@ -59,8 +59,22 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
      * @var  string the antiflood control directory
      */
     protected $_control_dir;
-    protected $_control_lock_file;
     protected $_control_db;
+
+    /**
+     * Creates a hashed filename based on the string. This is used
+     * to create shorter unique IDs for each control filename.
+     *
+     *     // Create the control filename
+     *     $filename = Antiflood_File::filename($control_key);
+     *
+     * @param   string  $string  string to hash into filename
+     * @return  string
+     */
+    protected static function filename($string)
+    {
+        return sha1($string) . '.chk';
+    }
 
     /**
      * Constructs the file antiflood driver. This method cannot be invoked externally. The file antiflood driver must
@@ -73,11 +87,14 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
     {
         // Setup parent
         parent::__construct($config);
+        
     }
 
     protected function _load_configuration()
     {
-        $this->_control_dir = Arr::get($this->_config, 'control_dir', APPPATH . 'control/antiflood');
+        $dirname = Arr::get($this->_config, 'control_dir', APPPATH . 'control/antiflood');
+        $this->_control_dir = new SplFileInfo($dirname);
+
         $this->_control_key = Arr::get($this->_config, 'control_key', '#');
         $this->_control_max_requests = Arr::get($this->_config, 'control_max_requests', Antiflood::DEFAULT_MAX_REQUESTS);
         $this->_control_request_timeout = Arr::get($this->_config, 'control_request_timeout', Antiflood::DEFAULT_REQUEST_TIMEOUT);
@@ -89,8 +106,9 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
             $this->_expiration = $this->_control_ban_time;
         }
 
-        $this->_control_db = $this->_control_dir . "/" . sha1($this->_control_key) . ".ser";
-        $this->_control_lock_file = $this->_control_dir . "/" . sha1($this->_control_key) . ".lock";
+        $filename = Antiflood_File::filename($this->_control_key);
+        $directory = $this->_resolve_directory($filename);
+        $this->_control_db = $directory . $filename;
     }
 
     /**
@@ -101,19 +119,34 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
     public function check()
     {
         $this->_load_configuration();
-        // Open file
-        $resource = new SplFileInfo($this->_control_lock_file);
+        $resource = new SplFileInfo($this->_control_db);
 
         // If file exists
         if ($resource->isFile())
         {
-            $diff = time() - $resource->getMTime();
-            if ($diff > $this->_control_ban_time)
+            $data = $this->_unserialize($resource);
+            $locked = (bool) $data['locked'];
+            $locked_access = $data['locked_access'];
+            $now = time();
+
+            if ($locked === true)
             {
-                return $this->_delete_file($resource);
+                $diff = $now - $locked_access;
+                if ($diff > $this->_control_ban_time)
+                {
+                    $data['locked'] = FALSE;
+                    $data['locked_access'] = $now;
+                    $this->_serialize($resource, $data);
+                    return true;
+                } else
+                {
+                    $data['locked_access'] = $now;
+                    $this->_serialize($resource, $data);
+                    return false;
+                }
             } else
             {
-                return !$this->_update_filemtime($resource);
+                return true;
             }
         } else
         {
@@ -132,6 +165,18 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
         $control = Array();
         $request_count = 0;
 
+        $filename = Antiflood_File::filename($this->_control_key);
+        $directory = $this->_resolve_directory($filename);
+
+        // Open directory
+        $dir = new SplFileInfo($directory);
+
+        // If the directory path is not a directory
+        if (!$dir->isDir())
+        {
+            $this->_make_directory($directory, 0777, TRUE);
+        }
+
         // Open file
         $resource = new SplFileInfo($this->_control_db);
         $now = time();
@@ -140,52 +185,58 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
         // If array not empty
         if (!empty($control))
         {
-            if ($now - $control["time"] < $this->_control_request_timeout)
+            if ($now - $control["last_access"] < $this->_control_request_timeout)
             {
-                $control["count"] ++;
+                $control["requests"] ++;
             } else
             {
-                $control["count"] = 1;
+                $control["requests"] = 1;
             }
+            $control["last_access"] = $now;
         } else
         {
-            $control = array("count" => 1, "time" => $now);
+            $control = array(
+                "requests" => 1,
+                "last_access" => $now,
+                "locked" => false,
+                "locked_access" => $now
+            );
         }
 
-        if ($control["count"] >= $this->_control_max_requests)
+        if ($control["requests"] >= $this->_control_max_requests)
         {
-            // Open lock file to inspect
-            $resouce = new SplFileInfo($this->_control_lock_file);
-            $file = $resouce->openFile('w');
-
-            try
-            {
-                $data = $this->_control_key;
-                $file->fwrite($data, strlen($data));
-                $file->fflush();
-
-                $control["count"] = 0;
-            } catch (ErrorException $e)
-            {
-                throw new Antiflood_Exception(__METHOD__ . ' failed to save control lock file with message : ' . $e->getMessage());
-            }
+            $control["requests"] = 0;
+            $control["locked"] = true;
+            $control["locked_access"] = $now;
         }
-        $request_count = $control["count"];
+        $request_count = $control["requests"];
+        $this->_serialize($resource, $control);
 
-        // Open control db file to inspect
-        $resouce = new SplFileInfo($this->_control_db);
-        $file = $resouce->openFile('w');
-
-        try
-        {
-            $data = serialize($control);
-            $file->fwrite($data, strlen($data));
-            $file->fflush();
-        } catch (ErrorException $e)
-        {
-            throw new Antiflood_Exception(__METHOD__ . ' failed to serialize control data with message : ' . $e->getMessage());
-        }
         return $request_count;
+    }
+
+    /**
+     * Delete current antiflood control method
+     *
+     * @return  void
+     */
+    public function delete()
+    {
+        $this->_load_configuration();
+        $filename = Antiflood_File::filename($this->_control_key);
+        $directory = $this->_resolve_directory($filename);
+        return $this->_delete_file(new SplFileInfo($directory . $filename), FALSE, TRUE);
+    }
+
+    /**
+     * Delete all antiflood controls method
+     *
+     * @return  void
+     */
+    public function delete_all()
+    {
+        $this->_load_configuration();
+        return $this->_delete_file($this->_control_dir, FALSE);
     }
 
     /**
@@ -197,101 +248,29 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
     public function garbage_collect()
     {
         $this->_load_configuration();
-        $now = time();
-
-        // Create new DirectoryIterator
-        $files = new DirectoryIterator($this->_control_dir);
-
-        // Iterate over each entry
-        while ($files->valid())
-        {
-            // Extract the entry name
-            $name = $files->getFilename();
-            $ext = $files->getExtension();
-
-            // If the name is not a dot
-            if ($name != '.' AND $name != '..')
-            {
-                if ($ext === 'ser')
-                {
-                    $resource = new SplFileInfo($files->getRealPath());
-                    $control = $this->_unserialize($resource);
-                    // Check if control db is older than expiration
-                    if (isset($control["time"]) AND ( $now - $control["time"]) > $this->_expiration)
-                    {
-                        // Then delete control db
-                        $this->_delete_file($resource);
-                        
-                        // And delete control lock file if exists
-                        $without_ext = preg_replace('/\\.[^.\\s]{3,4}$/', '', $name);
-                        $lock_file = $this->_control_dir . "/" . $without_ext . ".lock";
-                        $res = new SplFileInfo($lock_file);
-                        $this->_delete_file($res);
-                    }
-                }
-            }
-            // Move the file pointer on
-            $files->next();
-        }
-        // Remove the files iterator
-        // (fixes Windows PHP which has permission issues with open iterators)
-        unset($files);
-
+        $this->_delete_file($this->_control_dir, TRUE, TRUE, TRUE);
         return;
     }
 
     /**
-     * Delete current antiflood control method
+     * Serialize data to file
      *
-     * @return  void
+     * @return  array
+     * @throws Antiflood_exception
      */
-    public function delete()
+    protected function _serialize(SplFileInfo $file, $data)
     {
-        $this->_load_configuration();
-        // Delete control db file
-        $resource = new SplFileInfo($this->_control_db);
-        $this->_delete_file($resource);
-        // Delete control lok file
-        $resource = new SplFileInfo($this->_control_lock_file);
-        $this->_delete_file($resource);
-        return;
-    }
+        $fh = $file->openFile('w');
 
-    /**
-     * Delete all antiflood controls method
-     *
-     * @return  void
-     */
-    public function delete_all()
-    {
-        $this->_load_configuration();
-
-        // Create new DirectoryIterator
-        $files = new DirectoryIterator($this->_control_dir);
-
-        // Iterate over each entry
-        while ($files->valid())
+        try
         {
-            // Extract the entry name
-            $name = $files->getFilename();
-
-            // If the name is not a dot
-            if ($name != '.' AND $name != '..')
-            {
-                // Create new file resource
-                $resource = new SplFileInfo($files->getRealPath());
-                // Delete the file
-                $this->_delete_file($resource);
-            }
-
-            // Move the file pointer on
-            $files->next();
+            $serialized = serialize($data);
+            $fh->fwrite($serialized, strlen($serialized));
+            $fh->fflush();
+        } catch (ErrorException $e)
+        {
+            throw new Antiflood_Exception(__METHOD__ . ' failed to serialize control data with message : ' . $e->getMessage());
         }
-        // Remove the files iterator
-        // (fixes Windows PHP which has permission issues with open iterators)
-        unset($files);
-
-        return;
     }
 
     /**
@@ -340,64 +319,158 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
     }
 
     /**
-     * Update file modification time using SplFileInfo
+     * Deletes files recursively and returns FALSE on any errors
      *
-     * @return  bool
-     * @throws Antiflood_Exception
+     *     // Delete a file or folder whilst retaining parent directory and ignore all errors
+     *     $this->_delete_file($folder, TRUE, TRUE);
+     *
+     * @param   SplFileInfo  $file                     file
+     * @param   boolean      $retain_parent_directory  retain the parent directory
+     * @param   boolean      $ignore_errors            ignore_errors to prevent all exceptions interrupting exec
+     * @param   boolean      $only_expired             only expired files
+     * @return  boolean
+     * @throws  Antiflood_Exception
      */
-    protected function _update_filemtime(SplFileInfo $file)
+    protected function _delete_file(SplFileInfo $file, $retain_parent_directory = FALSE, $ignore_errors = FALSE, $only_expired = FALSE)
     {
         try
         {
-            if ($file->isFile())
-            {
-                touch($file->getRealPath());
-                return true;
-            } else
-            {
-                return false;
-            }
-        } catch (ErrorException $e)
-        {
-            throw new Antiflood_Exception(__METHOD__ . ' failed to update filemtime with message : ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Delete file using SplFileInfo
-     *
-     * @return  bool
-     * @throws Antiflood_Exception
-     */
-    protected function _delete_file(SplFileInfo $file)
-    {
-        try
-        {
-            // If is file
             if ($file->isFile())
             {
                 try
                 {
-                    return unlink($file->getRealPath());
+                    if (in_array($file->getFilename(), $this->config('ignore_on_delete')))
+                    {
+                        $delete = FALSE;
+                    } elseif ($only_expired === FALSE)
+                    {
+                        $delete = TRUE;
+                    } else
+                    {
+                        $delete = $this->_is_expired($file);
+                    }
+
+                    if ($delete === TRUE)
+                        return unlink($file->getRealPath());
+                    else
+                        return FALSE;
                 } catch (ErrorException $e)
                 {
-                    // Catch any delete file warnings
                     if ($e->getCode() === E_WARNING)
                     {
                         throw new Antiflood_Exception(__METHOD__ . ' failed to delete file : :file', array(':file' => $file->getRealPath()));
                     }
                 }
+            } elseif ($file->isDir())
+            {
+                $files = new DirectoryIterator($file->getPathname());
+
+                while ($files->valid())
+                {
+                    $name = $files->getFilename();
+                    if ($name != '.' AND $name != '..')
+                    {
+                        $fp = new SplFileInfo($files->getRealPath());
+                        $this->_delete_file($fp, $retain_parent_directory, $ignore_errors, $only_expired);
+                    }
+
+                    $files->next();
+                }
+
+                if ($retain_parent_directory)
+                {
+                    return TRUE;
+                }
+
+                try
+                {
+                    unset($files);
+                    if (!in_array($file->getFilename(), $this->config('ignore_on_delete')))
+                    {
+                        return rmdir($file->getRealPath());
+                    }
+                    else
+                    {
+                        return true;
+                    }
+                } catch (ErrorException $e)
+                {
+                    if ($e->getCode() === E_WARNING)
+                    {
+                        throw new Antiflood_Exception(__METHOD__ . ' failed to delete directory : :directory', array(':directory' => $file->getRealPath()));
+                    }
+                    throw $e;
+                }
             } else
             {
-                return false;
+                return FALSE;
             }
-        }
-        // Catch all exceptions
-        catch (Exception $e)
+        } catch (Exception $e)
         {
-            // Throw exception
+            if ($ignore_errors === TRUE)
+            {
+                return FALSE;
+            }
             throw $e;
         }
+    }
+
+    /**
+     * Resolves the antiflood directory real path from the filename
+     *
+     *      // Get the realpath of the antiflood folder
+     *      $realpath = $this->_resolve_directory($filename);
+     *
+     * @param   string  $filename  filename to resolve
+     * @return  string
+     */
+    protected function _resolve_directory($filename)
+    {
+        return $this->_control_dir->getRealPath() . DIRECTORY_SEPARATOR . $filename[0] . $filename[1] . DIRECTORY_SEPARATOR;
+    }
+
+    /**
+     * Makes the antiflood directory if it doesn't exist. Simply a wrapper for
+     * `mkdir` to ensure DRY principles
+     *
+     * @link    http://php.net/manual/en/function.mkdir.php
+     * @param   string    $directory    directory path
+     * @param   integer   $mode         chmod mode
+     * @param   boolean   $recursive    allows nested directories creation
+     * @param   resource  $context      a stream context
+     * @return  SplFileInfo
+     * @throws  Antiflood_Exception
+     */
+    protected function _make_directory($directory, $mode = 0777, $recursive = FALSE, $context = NULL)
+    {
+        // call mkdir according to the availability of a passed $context param
+        $mkdir_result = $context ?
+                mkdir($directory, $mode, $recursive, $context) :
+                mkdir($directory, $mode, $recursive);
+
+        // throw an exception if unsuccessful
+        if (!$mkdir_result)
+        {
+            throw new Antiflood_Exception('Failed to create the defined antiflood directory : :directory', array(':directory' => $directory));
+        }
+
+        // chmod to solve potential umask issues
+        chmod($directory, $mode);
+
+        return new SplFileInfo($directory);
+    }
+
+    /**
+     * Test if antiflood file is expired
+     *
+     * @param SplFileInfo $file the antiflood file
+     * @return boolean TRUE if expired false otherwise
+     */
+    protected function _is_expired(SplFileInfo $file)
+    {
+        $now = time();
+        $control = $this->_unserialize($file);
+        return (isset($control["last_access"]) AND ( $now - $control["last_access"]) > $this->_expiration);
     }
 
 }
