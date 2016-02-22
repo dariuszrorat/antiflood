@@ -142,11 +142,7 @@ records.</p>
 
 <p>antiflood.php</p>
 
-<div class="highlight highlight-text-html-php"><pre><span class="pl-pse">&lt;?php</span><span class="pl-s1"></span>
-<span class="pl-s1"></span>
-<span class="pl-s1"><span class="pl-c1">defined</span>(<span class="pl-s"><span class="pl-pds">'</span>SYSPATH<span class="pl-pds">'</span></span>) <span class="pl-k">or</span> <span class="pl-k">die</span>(<span class="pl-s"><span class="pl-pds">'</span>No direct script access.<span class="pl-pds">'</span></span>);</span>
-<span class="pl-s1"></span>
-<span class="pl-s1"><span class="pl-k">return</span> <span class="pl-c1">array</span>(</span>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-k">return</span> <span class="pl-c1">array</span>(</span>
 <span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>file<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">array</span>(</span>
 <span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>driver<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>file<span class="pl-pds">'</span></span>,</span>
 <span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>control_dir<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">APPPATH</span> <span class="pl-k">.</span> <span class="pl-s"><span class="pl-pds">'</span>control/antiflood<span class="pl-pds">'</span></span>,</span>
@@ -154,7 +150,13 @@ records.</p>
 <span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>control_max_requests<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">3</span>,</span>
 <span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>control_request_timeout<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">3600</span>,</span>
 <span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>control_ban_time<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">20</span>,</span>
-<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>expiration<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">172800</span></span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>expiration<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">172800</span>,</span>
+<span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>ignore_on_delete<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>.gitignore<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>.git<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>.svn<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">            <span class="pl-s"><span class="pl-pds">'</span>antiflood<span class="pl-pds">'</span></span> <span class="pl-c">// ignore control_dir delete</span></span>
+<span class="pl-s1">    )</span>
 <span class="pl-s1">    ),</span>
 <span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>sqlite<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">array</span>(</span>
 <span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>driver<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>sqlite<span class="pl-pds">'</span></span>,</span>
@@ -251,7 +253,20 @@ records.</p>
 <span class="pl-s1">        ),</span>
 <span class="pl-s1">        <span class="pl-c">// Take server offline immediately on first fail (no retry)</span></span>
 <span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>instant_death<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">TRUE</span></span>
-<span class="pl-s1">    )</span>
+<span class="pl-s1">    ),</span>
+<span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>mongo<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>driver<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>mongo<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>control_key<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-smi">$_SERVER</span>[<span class="pl-s"><span class="pl-pds">'</span>REMOTE_ADDR<span class="pl-pds">'</span></span>] <span class="pl-k">.</span> <span class="pl-smi">$_SERVER</span>[<span class="pl-s"><span class="pl-pds">'</span>REQUEST_URI<span class="pl-pds">'</span></span>],</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>control_max_requests<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">3</span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>control_request_timeout<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">3600</span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>control_ban_time<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">600</span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>expiration<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">172800</span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>host<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>localhost<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>port<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">27017</span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>database<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>control<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>collection<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>antiflood<span class="pl-pds">'</span></span></span>
+<span class="pl-s1">    ),</span>
+<span class="pl-s1"></span>
 <span class="pl-s1">);</span>
 <span class="pl-s1"></span></pre></div>
 
