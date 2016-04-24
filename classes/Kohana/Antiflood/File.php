@@ -198,7 +198,6 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
             $control = array(
                 "requests" => 1,
                 "last_access" => $now,
-                "lifetime" => $this->_expiration,
                 "locked" => false,
                 "locked_access" => $now
             );
@@ -469,11 +468,9 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
      */
     protected function _is_expired(SplFileInfo $file)
     {
+        $now = time();
         $control = $this->_unserialize($file);
-        $created = $control["last_access"];
-        $lifetime = $control["lifetime"];
-
-        return (($lifetime !== 0) AND ( ($created + $lifetime) < time()));
+        return (isset($control["last_access"]) AND ( $now - $control["last_access"]) > $this->_expiration);
     }
 
 }
