@@ -99,6 +99,28 @@ Using sqlite driver:
 
 ```
 
+Using custom config:
+
+```php
+
+ $antiflood = Antiflood::instance();
+ $antiflood->config('control_max_requests', 3);
+ $antiflood->reload_configuration();
+
+ if ($antiflood->check())
+ {
+     $antiflood->count_requests();
+     $this->template = View::factory('welcome/index');
+ }
+ else
+ {
+     header('HTTP/1.1 503 Service Unavailable');
+     die();
+ }
+
+```
+
+
 ## Probablistic garbage collection
 
 ```php

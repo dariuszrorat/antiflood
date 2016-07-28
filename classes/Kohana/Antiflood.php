@@ -217,6 +217,12 @@ abstract class Kohana_Antiflood {
 		throw new Antiflood_Exception('Cloning of Kohana_Antiflood objects is forbidden');
 	}
 
+	/**
+	 * Protected method used to setup config used by driver
+	 *
+	 * @return  void
+	 */
+
         protected function _load_configuration()
         {
             $this->_control_key = Arr::get($this->_config, 'control_key', '#');
@@ -226,6 +232,19 @@ abstract class Kohana_Antiflood {
 
             return;
         }
+
+	/**
+	 * Reload antiflood system configuration. This method must be used if config was changed manually.
+         * Not needed if You use only config/antiflood.php
+	 *
+         * Example:
+         *    $antiflood = Antiflood::instance();
+         *    $antiflood->config('control_max_requests', 5);
+         *    $antiflood->config('control_request_timeout', 60);
+         *    $antiflood->reload_configuration();
+         *
+	 * @return  this
+	 */
 
         public function reload_configuration()
         {
