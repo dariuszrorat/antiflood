@@ -114,5 +114,5 @@ class Kohana_Antiflood_Mysql extends Antiflood_Database
             }
         }
     }
-
+    $this->_load_configuration();
 }

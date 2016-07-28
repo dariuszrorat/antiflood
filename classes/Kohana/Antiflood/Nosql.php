@@ -18,13 +18,11 @@ abstract class Kohana_Antiflood_Nosql extends Antiflood
 
     protected function _load_configuration()
     {
-        $this->_control_key = Arr::get($this->_config, 'control_key', '#');
-        $this->_control_max_requests = Arr::get($this->_config, 'control_max_requests', Antiflood::DEFAULT_MAX_REQUESTS);
-        $this->_control_request_timeout = Arr::get($this->_config, 'control_request_timeout', Antiflood::DEFAULT_REQUEST_TIMEOUT);
-        $this->_control_ban_time = Arr::get($this->_config, 'control_ban_time', Antiflood::DEFAULT_BAN_TIME);
+        parent::_load_configuration();
 
         $this->_control_db_key = 'db_' . sha1($this->_control_key);
         $this->_control_lock_key = 'lock_' . sha1($this->_control_key);
+        return;
     }
 
     /**
@@ -34,7 +32,6 @@ abstract class Kohana_Antiflood_Nosql extends Antiflood
      */
     public function check()
     {
-        $this->_load_configuration();
         $serialized = $this->_client->get($this->_control_lock_key);
         if ($serialized !== null)
         {
@@ -64,7 +61,6 @@ abstract class Kohana_Antiflood_Nosql extends Antiflood
      */
     public function count_requests()
     {
-        $this->_load_configuration();
         $control = null;
         $request_count = 0;
 
@@ -109,8 +105,6 @@ abstract class Kohana_Antiflood_Nosql extends Antiflood
 
     public function delete()
     {
-        $this->_load_configuration();
-
         $this->_client->del($this->_control_db_key);
         $this->_client->del($this->_control_lock_key);
         return;

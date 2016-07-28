@@ -115,5 +115,5 @@ class Kohana_Antiflood_Postgresql extends Antiflood_Database
             }
         }
     }
-
+    $this->_load_configuration();
 }

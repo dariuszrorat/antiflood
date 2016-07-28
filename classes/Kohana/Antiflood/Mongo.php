@@ -97,14 +97,12 @@ class Kohana_Antiflood_Mongo extends Antiflood implements Antiflood_GarbageColle
         {
             throw new Antiflood_Exception('Failed to connect to MongoDB server with the following error : :error', array(':error' => $e->getMessage()));
         }
+        $this->_load_configuration();
     }
 
     protected function _load_configuration()
     {
-        $this->_control_key = Arr::get($this->_config, 'control_key', '#');
-        $this->_control_max_requests = Arr::get($this->_config, 'control_max_requests', Antiflood::DEFAULT_MAX_REQUESTS);
-        $this->_control_request_timeout = Arr::get($this->_config, 'control_request_timeout', Antiflood::DEFAULT_REQUEST_TIMEOUT);
-        $this->_control_ban_time = Arr::get($this->_config, 'control_ban_time', Antiflood::DEFAULT_BAN_TIME);
+        parent::_load_configuration();
 
         $this->_expiration = Arr::get($this->_config, 'expiration', Antiflood::DEFAULT_EXPIRE);
 
@@ -112,6 +110,7 @@ class Kohana_Antiflood_Mongo extends Antiflood implements Antiflood_GarbageColle
         {
             $this->_expiration = $this->_control_ban_time;
         }
+        return;
     }
 
     /**
@@ -121,8 +120,6 @@ class Kohana_Antiflood_Mongo extends Antiflood implements Antiflood_GarbageColle
      */
     public function check()
     {
-        $this->_load_configuration();
-
         $where = array('control_key' => $this->_control_key);
         $fields = array('locked', 'locked_access');
         $options = array('multiple' => false);
@@ -197,7 +194,6 @@ class Kohana_Antiflood_Mongo extends Antiflood implements Antiflood_GarbageColle
      */
     public function count_requests()
     {
-        $this->_load_configuration();
         $now = time();
         $where = array('control_key' => $this->_control_key);
 
@@ -282,7 +278,6 @@ class Kohana_Antiflood_Mongo extends Antiflood implements Antiflood_GarbageColle
      */
     public function garbage_collect()
     {
-        $this->_load_configuration();
         $now = time();
         $old_date = $now - $this->_expiration;
 
@@ -308,7 +303,6 @@ class Kohana_Antiflood_Mongo extends Antiflood implements Antiflood_GarbageColle
      */
     public function delete()
     {
-        $this->_load_configuration();
         $where = array('control_key' => $this->_control_key);
         $options = array('justOne' => true);
         try
@@ -330,7 +324,6 @@ class Kohana_Antiflood_Mongo extends Antiflood implements Antiflood_GarbageColle
      */
     public function delete_all()
     {
-        $this->_load_configuration();
         try
         {
             $this->_selected_collection->remove();

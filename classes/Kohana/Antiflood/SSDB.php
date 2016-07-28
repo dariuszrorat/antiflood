@@ -74,6 +74,7 @@ class Kohana_Antiflood_SSDB extends Antiflood_Nosql
         $timeout = $config['timeout'];
 
         $this->_client = new SimpleSSDB($host, $port, $timeout);
+        $this->_load_configuration();
     }
 
 }

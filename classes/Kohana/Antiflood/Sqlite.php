@@ -93,6 +93,7 @@ class Kohana_Antiflood_Sqlite extends Antiflood_Database
                 throw new Antiflood_Exception('Failed to create new SQLite table with the following error : :error', array(':error' => $e->getMessage()));
             }
         }
+        $this->_load_configuration();
     }
 
 }

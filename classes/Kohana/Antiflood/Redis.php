@@ -75,6 +75,7 @@ class Kohana_Antiflood_Redis extends Antiflood_Nosql
         );
 
         $this->_client = new Predis\Client($single_server);
+        $this->_load_configuration();
     }
 
 }

@@ -87,18 +87,16 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
     {
         // Setup parent
         parent::__construct($config);
-        
+        $this->_load_configuration();
     }
 
     protected function _load_configuration()
     {
+        parent::_load_configuration();
+
         $dirname = Arr::get($this->_config, 'control_dir', APPPATH . 'control/antiflood');
         $this->_control_dir = new SplFileInfo($dirname);
 
-        $this->_control_key = Arr::get($this->_config, 'control_key', '#');
-        $this->_control_max_requests = Arr::get($this->_config, 'control_max_requests', Antiflood::DEFAULT_MAX_REQUESTS);
-        $this->_control_request_timeout = Arr::get($this->_config, 'control_request_timeout', Antiflood::DEFAULT_REQUEST_TIMEOUT);
-        $this->_control_ban_time = Arr::get($this->_config, 'control_ban_time', Antiflood::DEFAULT_BAN_TIME);
         $this->_expiration = Arr::get($this->_config, 'expiration', Antiflood::DEFAULT_EXPIRE);
 
         if ($this->_expiration < $this->_control_ban_time)
@@ -109,6 +107,7 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
         $filename = Antiflood_File::filename($this->_control_key);
         $directory = $this->_resolve_directory($filename);
         $this->_control_db = $directory . $filename;
+        return;
     }
 
     /**
@@ -118,7 +117,6 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
      */
     public function check()
     {
-        $this->_load_configuration();
         $resource = new SplFileInfo($this->_control_db);
 
         // If file exists
@@ -161,7 +159,6 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
      */
     public function count_requests()
     {
-        $this->_load_configuration();
         $control = Array();
         $request_count = 0;
 
@@ -222,7 +219,6 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
      */
     public function delete()
     {
-        $this->_load_configuration();
         $filename = Antiflood_File::filename($this->_control_key);
         $directory = $this->_resolve_directory($filename);
         return $this->_delete_file(new SplFileInfo($directory . $filename), FALSE, TRUE);
@@ -235,7 +231,6 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
      */
     public function delete_all()
     {
-        $this->_load_configuration();
         return $this->_delete_file($this->_control_dir, FALSE);
     }
 
@@ -247,7 +242,6 @@ class Kohana_Antiflood_File extends Antiflood implements Antiflood_GarbageCollec
      */
     public function garbage_collect()
     {
-        $this->_load_configuration();
         $this->_delete_file($this->_control_dir, TRUE, TRUE, TRUE);
         return;
     }

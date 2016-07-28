@@ -9,15 +9,14 @@ abstract class Kohana_Antiflood_Database extends Antiflood implements Antiflood_
 
     protected function _load_configuration()
     {
-        $this->_control_key = Arr::get($this->_config, 'control_key', '#');
-        $this->_control_max_requests = Arr::get($this->_config, 'control_max_requests', Antiflood::DEFAULT_MAX_REQUESTS);
-        $this->_control_request_timeout = Arr::get($this->_config, 'control_request_timeout', Antiflood::DEFAULT_REQUEST_TIMEOUT);
-        $this->_control_ban_time = Arr::get($this->_config, 'control_ban_time', Antiflood::DEFAULT_BAN_TIME);
+        parent::_load_configuration();
+
         $this->_expiration = Arr::get($this->_config, 'expiration', Antiflood::DEFAULT_EXPIRE);
         if ($this->_expiration < $this->_control_ban_time)
         {
             $this->_expiration = $this->_control_ban_time;
         }
+        return;
     }
 
     /**
