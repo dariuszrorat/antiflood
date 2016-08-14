@@ -75,8 +75,7 @@ Using default file driver:
  }
  else
  {
-     header('HTTP/1.1 503 Service Unavailable');
-     die();
+     throw HTTP_Exception::factory(503);
  }
 
 ```
@@ -93,8 +92,7 @@ Using sqlite driver:
  }
  else
  {
-     header('HTTP/1.1 503 Service Unavailable');
-     die();
+     throw HTTP_Exception::factory(503);
  }
 
 ```
