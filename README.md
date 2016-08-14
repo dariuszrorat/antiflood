@@ -112,8 +112,7 @@ Using custom config:
  }
  else
  {
-     header('HTTP/1.1 503 Service Unavailable');
-     die();
+     throw HTTP_Exception::factory(503);
  }
 
 ```
