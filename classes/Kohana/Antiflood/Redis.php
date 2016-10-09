@@ -51,6 +51,8 @@ defined('SYSPATH') or die('No direct script access.');
  * @copyright  (c) 2015 Dariusz Rorat
  */
 
+include Kohana::find_file('vendor/predis', 'autoload');
+
 class Kohana_Antiflood_Redis extends Antiflood_Nosql
 {
 
@@ -63,8 +65,6 @@ class Kohana_Antiflood_Redis extends Antiflood_Nosql
      */
     protected function __construct(array $config)
     {
-        // Using external vendor Predis library
-        require_once Kohana::find_file('vendor/predis', 'autoload');
         // Setup parent
         parent::__construct($config);
 

@@ -51,6 +51,10 @@ defined('SYSPATH') or die('No direct script access.');
  * @copyright  (c) 2015 Dariusz Rorat
  */
 
+ // Using external vendor SSDB library
+ // from ssdb.io
+include Kohana::find_file('vendor/SSDB', 'SSDB');
+
 class Kohana_Antiflood_SSDB extends Antiflood_Nosql
 {
 
@@ -63,9 +67,6 @@ class Kohana_Antiflood_SSDB extends Antiflood_Nosql
      */
     protected function __construct(array $config)
     {
-        // Using external vendor SSDB library
-        // from ssdb.io
-        require_once Kohana::find_file('vendor/SSDB', 'SSDB');
         // Setup parent
         parent::__construct($config);
 
